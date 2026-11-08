@@ -7,3 +7,5 @@ local.properties
 *.iml
 .DS_Store
 __pycache__/
+*.apk
+signing-key-base64.txt
