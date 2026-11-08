@@ -4,7 +4,10 @@
 
 `./scripts/test.sh` checks elapsed-position extrapolation, paused position,
 playback speed, duration clamping, missing position/update time, future timestamps,
-reverse playback and elapsed/total formatting. It needs Java 17 and no test libraries.
+reverse playback and elapsed/total formatting. Update checks cover numeric version
+ordering, equal/older releases, malformed versions, the exact repository asset
+path, HTTPS origin restrictions and malicious/lookalike URLs (34 checks total).
+It needs Java 17 and no test libraries.
 
 ## Build checks
 
@@ -14,7 +17,9 @@ API 26, packages resources, aligns the APK and verifies its debug signature.
 
 Initial local verification: playback-math checks and SDK-only APK build.
 The Gradle build could not download its Android plugin in the restricted local
-environment. GitHub Actions is configured to run the full build and Android Lint.
+environment. GitHub Actions runs the full build and Android Lint. Its initial
+SDK setup tried to install the retired `tools` package; the workflow now explicitly
+requests `platform-tools` instead.
 
 No emulator/device playback or named music-app compatibility has been verified
 yet. Do not confuse an APK build with successful device operation.
@@ -44,6 +49,27 @@ Run on Android 8 and a recent Android version, ideally including the actual phon
    resume playback. Check stale controls clear and reconnecting works.
 9. Rotate the device; use a narrow screen, landscape, large font and TalkBack.
    Buttons must remain readable/reachable, with clear labels and disabled states.
+
+## Settings and updater acceptance checklist
+
+1. In Settings choose Compact, Large, then Extra large. Verify the title, clock and
+   all three buttons resize, persist across relaunch, and fit a narrow/landscape
+   screen with large system fonts. The Settings tab remains selected after resizing.
+2. While the repo is private or no stable release exists, check for updates. Show
+   the public-release requirement; keep music controls usable.
+3. Test current/older release tags (no update), a newer release without an APK,
+   no network, request limits, malformed JSON and interrupted downloads.
+4. Publish a higher version with the same signing key. Download, grant install
+   permission, return to Settings and install. Check saved source/size survive.
+5. Reject a different package, wrong signing key, non-increasing version code,
+   truncated/mismatched-checksum APK, insecure URL or redirect off GitHub.
+6. Rotate/background while checking/downloading. No stale activity dialogs or
+   crashes; cancelled downloads must not become installable partial APKs.
+7. With an already-downloaded valid update, reopen Settings and install without
+   another network request. Cancelling Android's installer leaves that button usable.
+
+Full updater installation has not been device-tested. Public releases and the
+persistent signing secret must be configured before testing the successful path.
 
 ## Implementation notes
 

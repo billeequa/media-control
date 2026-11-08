@@ -21,15 +21,28 @@ public class MainActivity extends Activity implements MediaHub.Observer {
     private Button source, access, notifications, restart, toggle, next;
     private ProgressBar progress;
     private ImageView artwork;
+    private View playerPage, settingsPage;
+    private Button playerTab, settingsTab;
+    private boolean settingsVisible;
+    private AppUpdater updater;
+    private int displaySize;
+    private int titleSize() { return new int[]{28,34,42}[displaySize]; }
+    private int controlSize() { return new int[]{120,160,212}[displaySize]; }
+    private int controlTextSize() { return new int[]{18,22,28}[displaySize]; }
     private final Handler main = new Handler(Looper.getMainLooper());
     private final Runnable tick = new Runnable() { @Override public void run() { updateProgress(); main.postDelayed(this, 500); } };
     @Override public void onCreate(Bundle state) {
         super.onCreate(state); hub = MediaHub.get(this);
+        displaySize = Math.max(0, Math.min(2, getPreferences(MODE_PRIVATE).getInt("display_size", 1)));
+        settingsVisible = state != null && state.getBoolean("settings_visible");
+        LinearLayout root = new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setBackgroundColor(BG);
+        FrameLayout pages = new FrameLayout(this);
+        root.addView(pages, new LinearLayout.LayoutParams(-1,0,1));
         ScrollView scroll = new ScrollView(this); scroll.setFillViewport(true); scroll.setBackgroundColor(BG);
         LinearLayout body = new LinearLayout(this); body.setOrientation(LinearLayout.VERTICAL); body.setPadding(dp(24),dp(18),dp(24),dp(24));
         scroll.addView(body,new ScrollView.LayoutParams(-1,-1));
         // Keep touch targets away from system gestures when edge-to-edge is enforced.
-        scroll.setOnApplyWindowInsetsListener((v, insets) -> {
+        root.setOnApplyWindowInsetsListener((v, insets) -> {
             if (Build.VERSION.SDK_INT >= 30) {
                 android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
                 v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
@@ -45,23 +58,71 @@ public class MainActivity extends Activity implements MediaHub.Observer {
         notifications = button("Enable notification controls",WHITE,PANEL); notifications.setTextSize(15); notifications.setOnClickListener(v -> enableNotifications()); body.addView(notifications,params(-1,52,8));
         artwork = new ImageView(this); artwork.setScaleType(ImageView.ScaleType.CENTER_CROP); artwork.setContentDescription("Album artwork");
         LinearLayout.LayoutParams artParams = params(100,100,28); artParams.gravity = Gravity.START; body.addView(artwork,artParams);
-        title = text("Start your music",34,WHITE); title.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL)); title.setMaxLines(4); body.addView(title,params(-1,-2,24));
-        artist = text("",20,MUTED); body.addView(artist,params(-1,-2,8));
+        title = text("Start your music",titleSize(),WHITE); title.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL)); title.setMaxLines(4); body.addView(title,params(-1,-2,24));
+        artist = text("",new int[]{18,20,24}[displaySize],MUTED); body.addView(artist,params(-1,-2,8));
         status = text("",14,MUTED); body.addView(status,params(-1,-2,14));
         View spacer = new View(this); body.addView(spacer,new LinearLayout.LayoutParams(1,dp(22),1));
         progress = new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal); progress.setMax(1000); progress.setProgressTintList(android.content.res.ColorStateList.valueOf(ACCENT)); progress.setProgressBackgroundTintList(android.content.res.ColorStateList.valueOf(PANEL));
         body.addView(progress,params(-1,8,24));
-        timing = text("— / —",16,MUTED); timing.setTypeface(Typeface.MONOSPACE); body.addView(timing,params(-1,-2,12));
+        timing = text("— / —",new int[]{16,18,22}[displaySize],MUTED); timing.setTypeface(Typeface.MONOSPACE); body.addView(timing,params(-1,-2,12));
         LinearLayout controls = new LinearLayout(this); controls.setOrientation(LinearLayout.HORIZONTAL);
-        restart = button("↺\nRestart",WHITE,PANEL); restart.setContentDescription("Restart current song"); restart.setTextSize(20);
-        toggle = button("▶\nPlay",BG,ACCENT); toggle.setContentDescription("Play"); toggle.setTextSize(25);
-        next = button("▸|\nNext",WHITE,PANEL); next.setContentDescription("Next song"); next.setTextSize(20);
-        for (Button b : new Button[]{restart,toggle,next}) { LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,dp(152),1); lp.setMargins(dp(3),0,dp(3),0); controls.addView(b,lp); }
+        restart = button("↺\nRestart",WHITE,PANEL); restart.setContentDescription("Restart current song"); restart.setTextSize(controlTextSize());
+        toggle = button("▶\nPlay",BG,ACCENT); toggle.setContentDescription("Play"); toggle.setTextSize(controlTextSize()+4);
+        next = button("▸|\nNext",WHITE,PANEL); next.setContentDescription("Next song"); next.setTextSize(controlTextSize());
+        for (Button b : new Button[]{restart,toggle,next}) { LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,dp(controlSize()),1); lp.setMargins(dp(3),0,dp(3),0); controls.addView(b,lp); }
         restart.setOnClickListener(v -> hub.command(MediaHub.RESTART,hub.source())); toggle.setOnClickListener(v -> hub.command(MediaHub.PLAY,hub.source())); next.setOnClickListener(v -> hub.command(MediaHub.NEXT,hub.source()));
         body.addView(controls,params(-1,-2,24));
         TextView footer = text("Your music app plays. This screen controls.",12,MUTED); footer.setGravity(Gravity.CENTER); body.addView(footer,params(-1,-2,22));
-        setContentView(scroll);
+        playerPage = scroll; pages.addView(playerPage,new FrameLayout.LayoutParams(-1,-1));
+        settingsPage = buildSettings(); pages.addView(settingsPage,new FrameLayout.LayoutParams(-1,-1));
+        LinearLayout tabs = new LinearLayout(this); tabs.setPadding(dp(20),dp(8),dp(20),dp(12));
+        playerTab = button("Player", BG, ACCENT); settingsTab = button("Settings", WHITE, PANEL);
+        for (Button tab : new Button[]{playerTab,settingsTab}) {
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,dp(56),1); lp.setMargins(dp(4),0,dp(4),0); tabs.addView(tab,lp);
+        }
+        playerTab.setOnClickListener(v -> showTab(false)); settingsTab.setOnClickListener(v -> showTab(true));
+        root.addView(tabs); setContentView(root); showTab(settingsVisible);
     }
+    private View buildSettings() {
+        ScrollView page = new ScrollView(this); page.setFillViewport(true);
+        LinearLayout body = new LinearLayout(this); body.setOrientation(LinearLayout.VERTICAL); body.setPadding(dp(24),dp(24),dp(24),dp(24)); page.addView(body);
+        body.addView(text("Settings",32,WHITE));
+        body.addView(text("Player size",21,WHITE),params(-1,-2,28));
+        body.addView(text("Choose the size of the title, time and playback buttons.",16,MUTED),params(-1,-2,8));
+        RadioGroup sizes = new RadioGroup(this);
+        String[] labels = {"Compact", "Large", "Extra large"};
+        for (int i=0;i<labels.length;i++) {
+            RadioButton option = new RadioButton(this); option.setId(View.generateViewId()); option.setText(labels[i]); option.setTextColor(WHITE); option.setTextSize(19); option.setPadding(dp(8),dp(8),dp(8),dp(8)); option.setMinHeight(dp(56));
+            option.setButtonTintList(android.content.res.ColorStateList.valueOf(ACCENT)); sizes.addView(option);
+            if (i == displaySize) sizes.check(option.getId());
+        }
+        sizes.setOnCheckedChangeListener((group,id)-> {
+            for (int i=0;i<group.getChildCount();i++) if (group.getChildAt(i).getId() == id && i != displaySize) {
+                getPreferences(MODE_PRIVATE).edit().putInt("display_size",i).apply(); recreate(); break;
+            }
+        });
+        body.addView(sizes,params(-1,-2,12));
+        body.addView(text("Updates",21,WHITE),params(-1,-2,32));
+        String version = "";
+        try { version = getPackageManager().getPackageInfo(getPackageName(),0).versionName; } catch (PackageManager.NameNotFoundException ignored) { }
+        body.addView(text("Installed version " + version,16,MUTED),params(-1,-2,8));
+        body.addView(text("Download updates from GitHub, then approve installation in Android. Music controls work offline.",16,MUTED),params(-1,-2,12));
+        Button check = button("Check for updates",BG,ACCENT); body.addView(check,params(-1,60,20));
+        TextView updateStatus = text("",15,MUTED); updateStatus.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE); body.addView(updateStatus,params(-1,-2,12));
+        Button install = button("Install downloaded update",WHITE,PANEL); body.addView(install,params(-1,60,12));
+        updater = new AppUpdater(this,check,install,updateStatus);
+        body.addView(text("Media access",21,WHITE),params(-1,-2,32));
+        Button media = button("Manage media access",WHITE,PANEL); media.setOnClickListener(v -> explainAccess()); body.addView(media,params(-1,56,12));
+        Button alerts = button("Manage notification controls",WHITE,PANEL); alerts.setOnClickListener(v -> enableNotifications()); body.addView(alerts,params(-1,56,12));
+        return page;
+    }
+    private void showTab(boolean settings) {
+        settingsVisible = settings; playerPage.setVisibility(settings ? View.GONE : View.VISIBLE); settingsPage.setVisibility(settings ? View.VISIBLE : View.GONE);
+        playerTab.setSelected(!settings); settingsTab.setSelected(settings);
+        playerTab.setAlpha(settings ? .55f : 1f); settingsTab.setAlpha(settings ? 1f : .55f);
+    }
+    @Override protected void onSaveInstanceState(Bundle state) { state.putBoolean("settings_visible",settingsVisible); super.onSaveInstanceState(state); }
+    @Override protected void onDestroy() { if (updater != null) updater.close(); super.onDestroy(); }
     @Override protected void onResume() { super.onResume(); hub.observe(this); main.post(tick); }
     @Override protected void onPause() { main.removeCallbacks(tick); hub.unobserve(this); super.onPause(); }
     @Override public void changed() {
@@ -99,7 +160,7 @@ public class MainActivity extends Activity implements MediaHub.Observer {
     }
     private void explainAccess() {
         new AlertDialog.Builder(this).setTitle("Connect to your music app")
-            .setMessage("Android uses notification access to let this controller find other apps’ active media sessions. This permission can expose notifications. Big Phone Player does not read or save notification text and has no internet permission. Enable Big Phone Player on the next screen, then return here.")
+            .setMessage("Android uses notification access to let this controller find other apps’ active media sessions. This permission can expose notifications. Big Phone Player does not read or save notification text. It only connects to GitHub when you check for an update. Enable Big Phone Player on the next screen, then return here.")
             .setPositiveButton("Open settings",(d,i)->startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)))
             .setNegativeButton("Cancel",null).show();
     }

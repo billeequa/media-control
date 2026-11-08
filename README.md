@@ -7,6 +7,11 @@ shows the title, artist, progress and optional artwork, with three large buttons
 restart the current song, play/pause, and next. It remembers your selected source
 instead of switching to a browser or another app when that app makes sound.
 
+The **Settings** tab has **Compact**, **Large**, and **Extra large** player sizes.
+Your choice is saved. It also has a **Check for updates** button that downloads a
+newer APK from this repository's latest stable release and opens Android's installer.
+Android asks you to approve installation.
+
 ## Setup
 
 1. Install the debug APK on an Android 8.0+ phone.
@@ -44,9 +49,10 @@ media controls.
 
 Android's notification-access permission is broad and can expose notifications.
 This app uses it only to obtain active media sessions; it does not inspect,
-save or forward notification contents. It has no internet permission, accounts,
-analytics, streaming credentials or backend. Only the chosen source package is
-stored locally. The control notification displays track information publicly
+save or forward notification contents. Internet access is used only when you
+request a GitHub update check/download. There are no accounts, analytics,
+streaming credentials or backend. The source package and display size are stored
+locally, and a downloaded update is held in the app's private cache. The control notification displays track information publicly
 on the lock screen when permitted by your notification settings.
 
 ## Build
@@ -65,7 +71,11 @@ GitHub Actions runs the same checks on pushes and pull requests, then uploads
 an installable debug APK as the **big-phone-player-debug** artifact. Open a
 successful run on the [Actions page](https://github.com/billeequa/media-control/actions)
 and download that artifact while signed in. This is a debug build, not a store release;
-different build machines can use different debug signing keys.
+different build machines can use different debug signing keys unless the stable
+signing secret is configured. For in-place updates, use the APK from **Releases**
+and keep its signing key fixed. The updater requires a **public repository** and
+an APK attached to a published release. See [release setup](docs/RELEASING.md)
+for the one-time signing secret and **Publish APK** workflow.
 
 For an SDK-only build without Gradle plugin downloads:
 

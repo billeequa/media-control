@@ -3,7 +3,8 @@
 Native Android controller for another app's already-started playback. Keep the
 screen simple: large restart, play/pause and next buttons, prominent track title
 and elapsed/total time. Artwork is secondary. No catalog, streaming, login,
-audio playback engine, internet permission, or proxy media session.
+audio playback engine or proxy media session. Internet access is only for
+user-initiated GitHub update checks and APK downloads.
 
 Use the platform MediaSessionManager and an explicitly enabled notification
 listener. Commands must respect the source's advertised capabilities. Restart
@@ -24,6 +25,15 @@ music app is verified until actually tested. Notification and lock-screen
 layout, visibility and available actions are controlled by Android and the
 device's settings. Do not create a fake local media session to take over them.
 
+Settings contains persisted Compact/Large/Extra large presets and a manual
+GitHub release updater. Keep HTTPS origin checks, package identity, higher
+version code and matching signing certificate validation before installation.
+Never embed GitHub credentials. Keep the update provider private and limited
+to its one APK; grant read access only to the Android installer intent. Updates
+must use a stable signing key configured as an Actions secret, not a key in Git.
+
 This repository is the source of truth. Publish authorized changes here and
 check the GitHub Actions result. The build workflow produces an installable
-debug APK artifact; publishing a signed store release is a separate task.
+debug APK artifact. The manual Publish APK workflow creates stable-key GitHub
+releases for the updater after the signing secret is configured. Bump both
+versionCode and versionName for a new release; never replace an existing tag.

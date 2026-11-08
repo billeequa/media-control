@@ -43,7 +43,7 @@ def main():
     # Gradle normally adds the namespace during manifest merging.
     manifest = work / "AndroidManifest.xml"
     manifest.write_text((ROOT / "app/src/main/AndroidManifest.xml").read_text().replace(
-        "<manifest ", '<manifest package="' + value("namespace") + '" ', 1))
+        "<manifest ", '<manifest package="' + value("namespace") + '" ', 1).replace("${applicationId}", value("applicationId")))
     run(tools / "aapt2", "link", "-I", platform, "--manifest", manifest,
         "--java", work / "generated", "--min-sdk-version", value("minSdk"),
         "--target-sdk-version", value("targetSdk"), "--version-code", value("versionCode"),
