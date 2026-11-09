@@ -156,6 +156,11 @@ final class MediaHub {
         if (artist == null) { CharSequence subtitle = m.getDescription().getSubtitle(); artist = subtitle == null ? "" : subtitle.toString(); }
         return artist;
     }
+    String album() {
+        MediaMetadata m=metadata();
+        String value=m==null ? null : m.getString(MediaMetadata.METADATA_KEY_ALBUM);
+        return value==null ? "" : value;
+    }
     Bitmap art() {
         MediaMetadata m = metadata();
         if (m == null) return null;
@@ -218,7 +223,9 @@ final class MediaHub {
             .setSubText("Controls for " + sourceLabel()).setContentIntent(open)
             .setVisibility(Notification.VISIBILITY_PUBLIC).setOnlyAlertOnce(true)
             .setShowWhen(false).setOngoing(playing()).setCategory(Notification.CATEGORY_TRANSPORT);
-        Bitmap artwork = art(); if (artwork != null) builder.setLargeIcon(artwork);
+        android.content.SharedPreferences appearance=context.getSharedPreferences("appearance",Context.MODE_PRIVATE);
+        boolean hideCover=appearance.getBoolean("grayscale_art",false) || appearance.getBoolean("text_only_art",false) || appearance.getBoolean("compact_clock",false);
+        Bitmap artwork = hideCover ? null : art(); if (artwork != null) builder.setLargeIcon(artwork);
         if (canPrevious()) builder.addAction(new Notification.Action.Builder(android.R.drawable.ic_media_previous, "Previous", action(PREVIOUS, 1)).build());
         if (canToggle()) builder.addAction(new Notification.Action.Builder(playing() ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play, playing() ? "Pause" : "Play", action(PLAY, 2)).build());
         if (supports(PlaybackState.ACTION_SKIP_TO_NEXT)) builder.addAction(new Notification.Action.Builder(android.R.drawable.ic_media_next, "Next", action(NEXT, 3)).build());

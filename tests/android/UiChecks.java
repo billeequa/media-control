@@ -17,6 +17,7 @@ public class UiChecks extends Instrumentation {
     void ui(Runnable r) throws Exception { Throwable[] error={null}; runOnMainSync(()->{try{r.run();}catch(Throwable t){error[0]=t;}}); if(error[0]!=null)throw new Exception(error[0]); }
     void check(boolean value,String message) { checks++; if(!value)throw new AssertionError(message); }
     Rect rect(View v) { Rect r=new Rect(); if(!v.getGlobalVisibleRect(r))r.setEmpty(); return r; }
+    boolean hasScroll(View v) { if(v instanceof ScrollView)return true; if(v instanceof ViewGroup)for(int i=0;i<((ViewGroup)v).getChildCount();i++)if(hasScroll(((ViewGroup)v).getChildAt(i)))return true; return false; }
     void settle() throws Exception { waitForIdleSync(); Thread.sleep(350); }
     Activity open() { return startActivitySync(new Intent().setClassName("com.jack.bigphoneplayer","com.jack.bigphoneplayer.MainActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK)); }
     void tap(View row,float x,float y) throws Exception {
@@ -26,14 +27,18 @@ public class UiChecks extends Instrumentation {
     @Override public void onStart() {
         Bundle result=new Bundle();
         try {
-            getTargetContext().getSharedPreferences("appearance",0).edit().putInt("theme",0).commit();
+            getTargetContext().getSharedPreferences("appearance",0).edit().putInt("theme",0).putBoolean("grayscale_art",false).putBoolean("text_only_art",false).putBoolean("compact_clock",false).commit();
             Activity a=open(); settle();
             View previous=(View)field(a,"previous"),toggle=(View)field(a,"toggle"),next=(View)field(a,"next");
+            View emptyCover=(View)field(a,"artwork");
+            check(!hasScroll((View)field(a,"playerPage")),"Player page contains a scroll container");
+            check(((TextView)field(a,"title")).getText().length()==0&&((TextView)field(a,"artist")).getText().length()==0,"Empty player shows outside metadata");
+            check("No player found".contentEquals(((TextView)field(emptyCover,"loading")).getText()),"Empty cover lacks no-player message");
+            check(((ImageView)field(emptyCover,"image")).getDrawable()==null,"Empty player retains cover art");
+            check(field(field(a,"title"),"animation")==null,"Empty player starts a marquee");
             Activity initial=a;
             ui(()->{
-                ((View)uncheckedField(initial,"access")).setVisibility(View.GONE);
-                ((View)uncheckedField(initial,"notifications")).setVisibility(View.GONE);
-                ((View)uncheckedField(initial,"status")).setVisibility(View.GONE);
+                ((View)uncheckedField(initial,"metadataPanel")).setVisibility(View.VISIBLE);
             });settle();
             Rect p0=rect(previous),t0=rect(toggle),n0=rect(next);
             TextView clock=(TextView)field(a,"timing"),total=(TextView)field(a,"totalTime");
@@ -98,6 +103,38 @@ public class UiChecks extends Instrumentation {
             ui(()->{try{hint.invoke(dock);}catch(Exception e){throw new RuntimeException(e);}});settle();
             check((Float)field(dock,"hintAlpha")>0,"Opening hint did not show");Thread.sleep(1400);
             check((Float)field(dock,"hintAlpha")==0,"Opening hint did not fade out");
+            Method presentation=cover.getClass().getDeclaredMethod("setPresentation",boolean.class,boolean.class,boolean.class);presentation.setAccessible(true);
+            Method content=cover.getClass().getDeclaredMethod("showContent",Bitmap.class,boolean.class,boolean.class,String.class,String.class,String.class);content.setAccessible(true);
+            ImageView coverImage=(ImageView)field(cover,"image"); View label=(View)field(cover,"label");
+            Bitmap red=Bitmap.createBitmap(16,16,Bitmap.Config.ARGB_8888);red.eraseColor(Color.RED);
+            ui(()->{try{presentation.invoke(cover,true,false,false);content.invoke(cover,red,false,true,"Artist","Album","Song");}catch(Exception e){throw new RuntimeException(e);}});settle();
+            check(coverImage.getColorFilter()!=null,"Grayscale filter missing");
+            Bitmap[] grayFrame={null};ui(()->{grayFrame[0]=Bitmap.createBitmap(cover.getWidth(),cover.getHeight(),Bitmap.Config.ARGB_8888);cover.draw(new Canvas(grayFrame[0]));});
+            int gray=grayFrame[0].getPixel(cover.getWidth()/2,cover.getHeight()/2);grayFrame[0].recycle();
+            check(Color.red(gray)==Color.green(gray)&&Color.green(gray)==Color.blue(gray),"Grayscale output contains color");
+            ui(()->{try{presentation.invoke(cover,false,true,false);content.invoke(cover,red,false,true,"Artist","Album","Song");}catch(Exception e){throw new RuntimeException(e);}});settle();
+            check(label.getVisibility()==View.VISIBLE&&coverImage.getDrawable()==null&&coverImage.getVisibility()!=View.VISIBLE,"Text mode exposes artwork");
+            check("Artist".contentEquals(((TextView)field(cover,"labelArtist")).getText())&&"Album".contentEquals(((TextView)field(cover,"labelAlbum")).getText())&&"Song".contentEquals(((TextView)field(cover,"labelSong")).getText()),"Label metadata/order incorrect");
+            ui(()->{try{content.invoke(cover,red,false,true,"","","");}catch(Exception e){throw new RuntimeException(e);}});settle();
+            check("Unknown album".contentEquals(((TextView)field(cover,"labelAlbum")).getText()),"Missing album fallback absent");
+            ui(()->{try{presentation.invoke(cover,false,false,false);content.invoke(cover,red,false,true,"Artist","Album","Song");}catch(Exception e){throw new RuntimeException(e);}});settle();
+            check(coverImage.getColorFilter()==null&&coverImage.getDrawable()!=null,"Color mode did not restore artwork");
+            ui(()->{try{content.invoke(cover,red,false,false,"Artist","Album","Song");}catch(Exception e){throw new RuntimeException(e);}});settle();
+            check(coverImage.getDrawable()==null&&label.getVisibility()==View.GONE&&((TextView)field(cover,"labelSong")).length()==0,"Lost player did not scrub stale art/label");
+            getTargetContext().getSharedPreferences("appearance",0).edit().putBoolean("grayscale_art",true).putBoolean("text_only_art",true).putBoolean("compact_clock",true).commit();
+            final Activity beforeCompact=a;ui(beforeCompact::finish);settle();a=open();settle();
+            View compactCover=(View)field(a,"artwork");TextClock bigClock=(TextClock)field(a,"wallClock");
+            check((Boolean)field(a,"grayscaleArt")&&(Boolean)field(a,"textOnlyArt")&&(Boolean)field(a,"compactClock"),"Independent display choices did not persist");
+            check(bigClock.getVisibility()==View.VISIBLE&&rect(bigClock).height()>0&&bigClock.getTextSize()>clock.getTextSize(),"Compact mode clock is not large/visible");
+            check(compactCover.getHeight()<compactCover.getWidth()&&Math.abs(compactCover.getHeight()-112*density)<=1,"Compact album block is not shortened");
+            check(((View)field(a,"title")).getVisibility()==View.GONE&&((View)field(a,"artist")).getVisibility()==View.GONE&&((View)field(a,"progress")).getVisibility()==View.VISIBLE,"Compact mode must hide duplicate labels and keep track progress");
+            check(!hasScroll((View)field(a,"playerPage")),"Compact page scrolls");
+            check(p0.equals(rect((View)field(a,"previous"))),"Compact mode moved transport controls");
+            check("h:mm".contentEquals(bigClock.getFormat12Hour())&&"HH:mm".contentEquals(bigClock.getFormat24Hour()),"Clock does not honor both system formats");
+            Method compactContent=compactCover.getClass().getDeclaredMethod("showContent",Bitmap.class,boolean.class,boolean.class,String.class,String.class,String.class);compactContent.setAccessible(true);
+            ui(()->{try{compactContent.invoke(compactCover,red,false,true,"Artist","Album","Song");}catch(Exception e){throw new RuntimeException(e);}});settle();
+            check(((View)field(compactCover,"label")).getVisibility()==View.VISIBLE&&((ImageView)field(compactCover,"image")).getDrawable()==null,"Compact layout exposes cover");
+            getTargetContext().getSharedPreferences("appearance",0).edit().putBoolean("grayscale_art",false).putBoolean("text_only_art",false).putBoolean("compact_clock",false).commit();
             String[] names={"AMOLED","Midnight","Paper","Amber","Rose","Ocean","Violet","Monochrome","Cloud"};int[] backgrounds={0xff000000,0xff0b1326,0xfffaf8f2,0xff171109,0xff1b1019,0xff071a20,0xff151022,0xff080808,0xfff3f7ff};
             for(int i=1;i<=names.length;i++) {
                 getTargetContext().getSharedPreferences("appearance",0).edit().putInt("theme",i).commit();

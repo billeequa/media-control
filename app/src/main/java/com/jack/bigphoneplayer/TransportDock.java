@@ -58,7 +58,7 @@ final class TransportDock extends FrameLayout {
                 }
             }
         }
-        // Outside the targets, allow the underlying artwork/metadata to scroll normally.
+        // Outside the targets, leave the rest of the player hierarchy untouched.
         if (active==null) return false;
         MotionEvent copy=MotionEvent.obtain(event);
         boolean consumed=active.onTouchEvent(copy); copy.recycle();

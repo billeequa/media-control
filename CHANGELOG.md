@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.6.0
+
+- Removed scrolling from the main player screen. Without an active selected
+  player, show “No player found” inside the album box and clear stale metadata.
+- Added independent, saved Grayscale album art and Text-only album block options.
+  The text block shows artist, album and song on a plain theme-colored background.
+- Added Compact album label + big clock: a short text block above the current
+  local time in the phone’s 12/24-hour format. Track progress/time remain available.
+- Hide cover images from this app’s notification when any of these options is on.
+  The source music app controls its own notification.
+- Kept setup/access controls in Settings; Choose app opens the access explanation
+  when permission is missing. Covers shrink to fit instead of scrolling.
+
 ## 0.5.0
 
 - Raised the anchored playback row, reducing the gap below the time display.

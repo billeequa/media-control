@@ -18,11 +18,14 @@ public class MainActivity extends Activity implements MediaHub.Observer {
     private AppPalette palette;
     private TransportDock controlsDock;
     private MediaHub hub;
-    private TextView title, artist, timing, totalTime, status;
-    private Button source, access, notifications;
+    private TextView title, artist, timing, totalTime;
+    private Button source;
     private TransportButton previous, toggle, next;
     private ProgressBar progress;
     private CoverArtwork artwork;
+    private View metadataPanel;
+    private TextClock wallClock;
+    private boolean grayscaleArt,textOnlyArt,compactClock;
     private View playerPage, settingsPage;
     private Button playerTab, settingsTab;
     private boolean settingsVisible;
@@ -34,6 +37,10 @@ public class MainActivity extends Activity implements MediaHub.Observer {
     private final Runnable tick = new Runnable() { @Override public void run() { updateProgress(); main.postDelayed(this, 500); } };
     @Override public void onCreate(Bundle state) {
         palette=AppPalette.fromId(getSharedPreferences("appearance",MODE_PRIVATE).getInt("theme",0));
+        SharedPreferences appearance=getSharedPreferences("appearance",MODE_PRIVATE);
+        grayscaleArt=appearance.getBoolean("grayscale_art",false);
+        textOnlyArt=appearance.getBoolean("text_only_art",false);
+        compactClock=appearance.getBoolean("compact_clock",false);
         setTheme(palette.dark ? R.style.AppTheme : R.style.AppTheme_Light);
         super.onCreate(state); hub = MediaHub.get(this);
         getWindow().setStatusBarColor(palette.background); getWindow().setNavigationBarColor(palette.background);
@@ -45,9 +52,7 @@ public class MainActivity extends Activity implements MediaHub.Observer {
         LinearLayout root = new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setBackgroundColor(palette.background);
         FrameLayout pages = new FrameLayout(this);
         root.addView(pages, new LinearLayout.LayoutParams(-1,0,1));
-        ScrollView scroll = new ScrollView(this); scroll.setFillViewport(true); scroll.setBackgroundColor(palette.background);
         LinearLayout body = new LinearLayout(this); body.setOrientation(LinearLayout.VERTICAL); body.setPadding(dp(20),dp(10),dp(20),dp(10));
-        scroll.addView(body,new ScrollView.LayoutParams(-1,-1));
         // Keep touch targets away from system gestures when edge-to-edge is enforced.
         root.setOnApplyWindowInsetsListener((v, insets) -> {
             if (Build.VERSION.SDK_INT >= 30) {
@@ -66,12 +71,20 @@ public class MainActivity extends Activity implements MediaHub.Observer {
         source.setMinWidth(0); source.setMinimumWidth(0); source.setContentDescription("Choose music app"); source.setOnClickListener(v -> chooseSource());
         LinearLayout.LayoutParams sourceParams = new LinearLayout.LayoutParams(0,dp(48),1); sourceParams.leftMargin=dp(12); header.addView(source,sourceParams);
         body.addView(header,params(-1,-2,0));
-        access = button("Enable media access",palette.onAccent,palette.accent); access.setOnClickListener(v -> explainAccess()); body.addView(access,params(-1,56,12));
-        notifications = button("Enable notification controls",palette.text,palette.panel); notifications.setTextSize(15); notifications.setOnClickListener(v -> enableNotifications()); body.addView(notifications,params(-1,52,8));
         artwork = new CoverArtwork(this,palette); artwork.setContentDescription("Album artwork");
-        LinearLayout.LayoutParams artParams = params(-2,-2,16); artParams.gravity=Gravity.CENTER_HORIZONTAL; body.addView(artwork,artParams);
+        artwork.setPresentation(grayscaleArt,textOnlyArt,compactClock);
+        LinearLayout coverArea=new LinearLayout(this); coverArea.setOrientation(LinearLayout.VERTICAL); coverArea.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams artParams=new LinearLayout.LayoutParams(-1,compactClock ? dp(112) : 0,compactClock ? 0 : 1);
+        artParams.gravity=Gravity.CENTER_HORIZONTAL; coverArea.addView(artwork,artParams);
+        wallClock=new TextClock(this); wallClock.setFormat12Hour("h:mm"); wallClock.setFormat24Hour("HH:mm");
+        wallClock.setTextColor(palette.text); wallClock.setGravity(Gravity.CENTER); wallClock.setSingleLine(true);
+        wallClock.setTypeface(Typeface.create("sans-serif-light",Typeface.NORMAL));
+        wallClock.setAutoSizeTextTypeUniformWithConfiguration(28,120,2,android.util.TypedValue.COMPLEX_UNIT_SP);
+        wallClock.setVisibility(compactClock ? View.VISIBLE : View.GONE);
+        coverArea.addView(wallClock,new LinearLayout.LayoutParams(-1,0,1));
+        body.addView(coverArea,new LinearLayout.LayoutParams(-1,0,1));
         LinearLayout metadata=new LinearLayout(this); metadata.setOrientation(LinearLayout.VERTICAL); metadata.setPadding(dp(20),0,dp(20),0);
-        title = metadataLine("Start your music",titleSize(),palette.text); title.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL)); metadata.addView(title,lineParams(title,16));
+        title = metadataLine("",titleSize(),palette.text); title.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL)); metadata.addView(title,lineParams(title,16));
         artist = metadataLine("",new int[]{21,24,28}[displaySize],palette.muted); metadata.addView(artist,lineParams(artist,2));
         progress = new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal); progress.setMax(1000); progress.setProgressTintList(android.content.res.ColorStateList.valueOf(palette.accent)); progress.setProgressBackgroundTintList(android.content.res.ColorStateList.valueOf(palette.panel));
         metadata.addView(progress,params(-1,4,10));
@@ -79,7 +92,6 @@ public class MainActivity extends Activity implements MediaHub.Observer {
         timing = text("—",new int[]{19,22,26}[displaySize],palette.muted); timing.setTypeface(Typeface.MONOSPACE);
         totalTime = text("—",new int[]{19,22,26}[displaySize],palette.muted); totalTime.setTypeface(Typeface.MONOSPACE); totalTime.setGravity(Gravity.END);
         clock.addView(timing,new LinearLayout.LayoutParams(0,-2,1)); clock.addView(totalTime,new LinearLayout.LayoutParams(0,-2,1)); metadata.addView(clock,params(-1,-2,5));
-        status = text("",14,palette.muted); status.setVisibility(View.GONE); body.addView(status,params(-1,-2,10));
         controlsDock = new TransportDock(this,palette,dp(controlSize()));
         previous = new TransportButton(this,TransportButton.Symbol.PREVIOUS,false,palette); previous.setContentDescription("Previous. Tap once to restart, twice within three seconds for the previous track."); previous.setTooltipText("Previous");
         toggle = new TransportButton(this,TransportButton.Symbol.PLAY,true,palette); toggle.setContentDescription("Play"); toggle.setTooltipText("Play");
@@ -90,8 +102,8 @@ public class MainActivity extends Activity implements MediaHub.Observer {
         previous.setOnClickListener(v -> hub.command(MediaHub.PREVIOUS,hub.source())); toggle.setOnClickListener(v -> hub.command(MediaHub.PLAY,hub.source())); next.setOnClickListener(v -> hub.command(MediaHub.NEXT,hub.source()));
         FrameLayout player = new FrameLayout(this);
         LinearLayout content=new LinearLayout(this); content.setOrientation(LinearLayout.VERTICAL);
-        content.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
-        content.addView(metadata,new LinearLayout.LayoutParams(-1,-2));
+        content.addView(body,new LinearLayout.LayoutParams(-1,0,1));
+        metadataPanel=metadata; content.addView(metadata,new LinearLayout.LayoutParams(-1,-2));
         content.addView(new View(this),new LinearLayout.LayoutParams(-1,controlsDock.reservedHeight()));
         player.addView(content,new FrameLayout.LayoutParams(-1,-1));
         player.addView(controlsDock,new FrameLayout.LayoutParams(-1,-1));
@@ -104,7 +116,21 @@ public class MainActivity extends Activity implements MediaHub.Observer {
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,dp(48),1); lp.setMargins(dp(4),0,dp(4),0); tabs.addView(tab,lp);
         }
         playerTab.setOnClickListener(v -> showTab(false)); settingsTab.setOnClickListener(v -> showTab(true));
-        root.addView(tabs); setContentView(root); showTab(settingsVisible);
+        root.addView(tabs); setContentView(root); showTab(settingsVisible); changed();
+        if(Build.VERSION.SDK_INT>=30 && getWindow().getInsetsController()!=null) {
+            int mask=WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS|WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
+            getWindow().getInsetsController().setSystemBarsAppearance(palette.dark ? 0 : mask,mask);
+        }
+    }
+    private Switch appearanceSwitch(String label,String key,boolean checked) {
+        Switch option=new Switch(this); option.setText(label); option.setTextColor(palette.text); option.setTextSize(18);
+        option.setMinHeight(dp(56)); option.setSwitchPadding(dp(12)); option.setChecked(checked);
+        option.setOnCheckedChangeListener((button,value)->{
+            artwork.setVisibility(View.INVISIBLE);
+            getSharedPreferences("appearance",MODE_PRIVATE).edit().putBoolean(key,value).apply();
+            hub.refresh(); recreate();
+        });
+        return option;
     }
     private View buildSettings() {
         ScrollView page = new ScrollView(this); page.setFillViewport(true);
@@ -125,6 +151,12 @@ public class MainActivity extends Activity implements MediaHub.Observer {
             }
         });
         body.addView(sizes,params(-1,-2,12));
+        body.addView(text("Album display",21,palette.text),params(-1,-2,28));
+        body.addView(text("Hide the cover with a plain artist, album and song label, or show it in grayscale.",16,palette.muted),params(-1,-2,8));
+        body.addView(appearanceSwitch("Grayscale album art","grayscale_art",grayscaleArt),params(-1,-2,8));
+        body.addView(appearanceSwitch("Text-only album block","text_only_art",textOnlyArt),params(-1,-2,8));
+        body.addView(appearanceSwitch("Compact album label + big clock","compact_clock",compactClock),params(-1,-2,8));
+        body.addView(text("Compact mode puts a short text label above the current time, using your phone’s 12/24-hour format. Text labels take priority over grayscale. These options also hide the cover in this app’s notification; your music app manages its own notification.",16,palette.muted),params(-1,-2,8));
         body.addView(text("Theme",21,palette.text),params(-1,-2,28));
         RadioGroup themes=new RadioGroup(this);
         int chosenTheme=getSharedPreferences("appearance",MODE_PRIVATE).getInt("theme",0);
@@ -165,23 +197,17 @@ public class MainActivity extends Activity implements MediaHub.Observer {
     @Override protected void onResume() { super.onResume(); hub.observe(this); main.post(tick); if (!settingsVisible) controlsDock.showTouchHints(); }
     @Override protected void onPause() { main.removeCallbacks(tick); hub.unobserve(this); super.onPause(); }
     @Override public void changed() {
-        title.setText(hub.title()); artist.setText(hub.artist());
-        source.setText(hub.sourceLabel() + "  ▾");
-        access.setVisibility(hub.hasAccess() ? View.GONE : View.VISIBLE);
-        notifications.setVisibility(getSystemService(NotificationManager.class).areNotificationsEnabled() ? View.GONE : View.VISIBLE);
+        boolean available=hub.available();
+        title.setText(available ? hub.title() : ""); artist.setText(available ? hub.artist() : "");
+        metadataPanel.setVisibility(available ? View.VISIBLE : View.INVISIBLE);
+        title.setVisibility(compactClock ? View.GONE : View.VISIBLE); artist.setVisibility(compactClock ? View.GONE : View.VISIBLE);
+        source.setText((hub.source()==null ? "Choose app" : hub.sourceLabel()) + "  ▾");
         PlaybackState playbackState=hub.state();
         int playback=playbackState==null ? PlaybackState.STATE_NONE : playbackState.getState();
-        artwork.showArtwork(hub.art(),playback==PlaybackState.STATE_BUFFERING || playback==PlaybackState.STATE_CONNECTING);
+        artwork.showContent(hub.art(),playback==PlaybackState.STATE_BUFFERING || playback==PlaybackState.STATE_CONNECTING,available,hub.artist(),hub.album(),hub.title());
         boolean playing = hub.playing();
         toggle.setSymbol(playing ? TransportButton.Symbol.PAUSE : TransportButton.Symbol.PLAY); toggle.setContentDescription(playing ? "Pause" : "Play"); toggle.setTooltipText(playing ? "Pause" : "Play");
         enable(previous,hub.canPrevious()); enable(toggle,hub.canToggle()); enable(next,hub.supports(PlaybackState.ACTION_SKIP_TO_NEXT));
-        String message = "";
-        if (!hub.hasAccess()) message = "Enable media access to connect to your music app.";
-        else if (!hub.available()) message = hub.source() == null ? "Start a song in another app, then return here." : "Start playback in " + hub.sourceLabel() + ", or choose another app above.";
-        else {
-            if (playback == PlaybackState.STATE_ERROR) message = "The music app reported a playback error.";
-        }
-        status.setText(message); status.setVisibility(message.isEmpty() ? View.GONE : View.VISIBLE);
         updateProgress();
     }
     private void updateProgress() {
@@ -193,6 +219,7 @@ public class MainActivity extends Activity implements MediaHub.Observer {
     }
     private void chooseSource() {
         hub.refresh(); java.util.List<MediaController> list = hub.sources();
+        if (!hub.hasAccess()) { explainAccess(); return; }
         if (list.isEmpty()) { new AlertDialog.Builder(this).setTitle("No music app available").setMessage("Start a song in foobar2000 or another music app, then return here. Media access must be enabled.").setPositiveButton("OK",null).show(); return; }
         String[] labels = new String[list.size()];
         for (int i=0;i<list.size();i++) labels[i] = hub.label(list.get(i).getPackageName());

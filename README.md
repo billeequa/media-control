@@ -15,9 +15,9 @@ Your choice is saved. Theme options are **Classic Green**, **AMOLED**, **Midnigh
 newer APK from this repository's latest stable release and opens Android's installer.
 Android asks you to approve installation.
 
-The transport buttons and metadata stay anchored above the tabs while artwork
-scrolls separately on shorter screens. The enlarged clock stays visible above
-the raised playback row. Title and artist stay on one line: long
+The player screen does not scroll. The transport buttons and metadata stay
+anchored above the tabs; the cover shrinks to fit a short viewport. The elapsed/total
+time stays visible above the raised playback row. Title and artist stay on one line: long
 values loop continuously twice; the next copy slides smoothly to the normal
 starting position, slows to rest, and stays ellipsized. Equal metadata does not
 restart scrolling, and disabled system animations show a static line. Buffering replaces
@@ -28,6 +28,18 @@ the Player and Settings tabs. The playback row sits higher, and artist, time,
 source-picker and tab labels are larger. A brief fading outline shows these touch areas
 when opening the player. The launcher icon is a green rounded play triangle on
 black.
+
+In **Settings → Album display**, choose independently:
+
+- **Grayscale album art**: monochrome covers.
+- **Text-only album block**: artist, album and song on a plain theme-colored block.
+- **Compact album label + big clock**: a short text block above a large current-time
+  clock in your phone’s 12/24-hour format. Track progress and elapsed/total time remain.
+
+Text mode overrides grayscale; compact mode always uses a text label. These choices
+are saved. All three options omit the cover from Big Phone Player’s own notification;
+your music app controls its own notification. Without an active selected player,
+the box says **No player found**, with no stale outside metadata or scrolling.
 
 ## Install or update
 
@@ -41,9 +53,11 @@ has actually been tested.
 ## Setup
 
 1. Install the debug APK on an Android 8.0+ phone.
-2. Open Big Phone Player and tap **Enable media access**. Read the explanation,
-   enable notification access for Big Phone Player in Android settings, then return.
-3. On Android 13+, allow notifications if you want notification controls.
+2. Open Big Phone Player and tap **Choose app**, or go to **Settings → Manage media
+   access**. Read the explanation, enable notification access for Big Phone Player
+   in Android settings, then return.
+3. For notification controls, use **Settings → Manage notification controls** and
+   allow notifications (Android 13+ may ask for permission).
 4. If Android blocks notification access as a restricted setting after APK
    installation, open Settings → Apps → Big Phone Player → ⋮ → Allow restricted
    settings, authenticate, then return to enable media access.

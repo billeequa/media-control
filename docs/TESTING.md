@@ -91,7 +91,7 @@ cannot establish Spotify, Pandora, Bandcamp or OEM lock-screen behavior.
    Check RTL, emoji, line breaks and disabled system animations.
 4. Tap high/low around each playback button. The hint must match the effective
    target, gaps must remain inactive, and Player/Settings must always receive
-   their own taps. Scroll the cover outside the targets. Verify loading, errors
+   their own taps. The main player page must not scroll. Verify loading, errors
    and source changes do not move playback controls.
 5. Check Compact/Large/Extra large, landscape, narrow screens, enlarged system
    fonts and TalkBack. Artist, clock, source and tab labels should be readable;
@@ -113,3 +113,22 @@ The app uses the platform notification listener and media-session callbacks. It
 neither reads notification contents nor creates a substitute media session or
 playback foreground service. The visible clock refreshes every 500 ms; the
 controller notification refreshes every five seconds while playing.
+
+## Version 0.6.0 display acceptance
+
+The UI checks now additionally cover the empty player's message, no main-page
+scroll container, cleared artwork/labels, grayscale rendering pixels, restored
+color rendering, artist/album/song text and missing-album fallback, independent
+saved display flags, compact block geometry, a large visible TextClock with both
+system formats, retained progress/time and unchanged transport coordinates.
+
+Local: 613 logic checks pass; Android app and instrumentation compile against
+API 35. Full build/Lint/signing and emulator results are recorded by the new
+release's Android build workflow; v0.5.0 results above refer to that earlier release.
+
+On a phone, confirm all three switches persist, especially grayscale → text →
+color, loading and source disconnection after a visible cover, long/missing album
+metadata, and compact mode with a paused track. Check the device's 12/24-hour
+setting/time zone, rotation and larger font sizes. Confirm this controller's
+notification loses its cover immediately when an option is enabled. These checks
+do not establish the behavior of a source app's separate notification.
