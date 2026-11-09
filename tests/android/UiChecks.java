@@ -16,7 +16,7 @@ public class UiChecks extends Instrumentation {
     Object uncheckedField(Object o,String name) { try{return field(o,name);}catch(Exception e){throw new RuntimeException(e);} }
     void ui(Runnable r) throws Exception { Throwable[] error={null}; runOnMainSync(()->{try{r.run();}catch(Throwable t){error[0]=t;}}); if(error[0]!=null)throw new Exception(error[0]); }
     void check(boolean value,String message) { checks++; if(!value)throw new AssertionError(message); }
-    Rect rect(View v) { Rect r=new Rect(); v.getGlobalVisibleRect(r); return r; }
+    Rect rect(View v) { Rect r=new Rect(); if(!v.getGlobalVisibleRect(r))r.setEmpty(); return r; }
     void settle() throws Exception { waitForIdleSync(); Thread.sleep(350); }
     Activity open() { return startActivitySync(new Intent().setClassName("com.jack.bigphoneplayer","com.jack.bigphoneplayer.MainActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK)); }
     void tap(View row,float x,float y) throws Exception {

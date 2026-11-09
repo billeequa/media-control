@@ -70,14 +70,15 @@ public class MainActivity extends Activity implements MediaHub.Observer {
         notifications = button("Enable notification controls",palette.text,palette.panel); notifications.setTextSize(15); notifications.setOnClickListener(v -> enableNotifications()); body.addView(notifications,params(-1,52,8));
         artwork = new CoverArtwork(this,palette); artwork.setContentDescription("Album artwork");
         LinearLayout.LayoutParams artParams = params(-2,-2,16); artParams.gravity=Gravity.CENTER_HORIZONTAL; body.addView(artwork,artParams);
-        title = metadataLine("Start your music",titleSize(),palette.text); title.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL)); body.addView(title,lineParams(title,16));
-        artist = metadataLine("",new int[]{21,24,28}[displaySize],palette.muted); body.addView(artist,lineParams(artist,2));
+        LinearLayout metadata=new LinearLayout(this); metadata.setOrientation(LinearLayout.VERTICAL); metadata.setPadding(dp(20),0,dp(20),0);
+        title = metadataLine("Start your music",titleSize(),palette.text); title.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL)); metadata.addView(title,lineParams(title,16));
+        artist = metadataLine("",new int[]{21,24,28}[displaySize],palette.muted); metadata.addView(artist,lineParams(artist,2));
         progress = new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal); progress.setMax(1000); progress.setProgressTintList(android.content.res.ColorStateList.valueOf(palette.accent)); progress.setProgressBackgroundTintList(android.content.res.ColorStateList.valueOf(palette.panel));
-        body.addView(progress,params(-1,4,10));
+        metadata.addView(progress,params(-1,4,10));
         LinearLayout clock = new LinearLayout(this); clock.setGravity(Gravity.CENTER_VERTICAL);
         timing = text("—",new int[]{19,22,26}[displaySize],palette.muted); timing.setTypeface(Typeface.MONOSPACE);
         totalTime = text("—",new int[]{19,22,26}[displaySize],palette.muted); totalTime.setTypeface(Typeface.MONOSPACE); totalTime.setGravity(Gravity.END);
-        clock.addView(timing,new LinearLayout.LayoutParams(0,-2,1)); clock.addView(totalTime,new LinearLayout.LayoutParams(0,-2,1)); body.addView(clock,params(-1,-2,5));
+        clock.addView(timing,new LinearLayout.LayoutParams(0,-2,1)); clock.addView(totalTime,new LinearLayout.LayoutParams(0,-2,1)); metadata.addView(clock,params(-1,-2,5));
         status = text("",14,palette.muted); status.setVisibility(View.GONE); body.addView(status,params(-1,-2,10));
         controlsDock = new TransportDock(this,palette,dp(controlSize()));
         previous = new TransportButton(this,TransportButton.Symbol.PREVIOUS,false,palette); previous.setContentDescription("Previous. Tap once to restart, twice within three seconds for the previous track."); previous.setTooltipText("Previous");
@@ -88,9 +89,11 @@ public class MainActivity extends Activity implements MediaHub.Observer {
         }
         previous.setOnClickListener(v -> hub.command(MediaHub.PREVIOUS,hub.source())); toggle.setOnClickListener(v -> hub.command(MediaHub.PLAY,hub.source())); next.setOnClickListener(v -> hub.command(MediaHub.NEXT,hub.source()));
         FrameLayout player = new FrameLayout(this);
-        FrameLayout.LayoutParams contentParams=new FrameLayout.LayoutParams(-1,-1);
-        contentParams.bottomMargin=controlsDock.reservedHeight();
-        player.addView(scroll,contentParams);
+        LinearLayout content=new LinearLayout(this); content.setOrientation(LinearLayout.VERTICAL);
+        content.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
+        content.addView(metadata,new LinearLayout.LayoutParams(-1,-2));
+        content.addView(new View(this),new LinearLayout.LayoutParams(-1,controlsDock.reservedHeight()));
+        player.addView(content,new FrameLayout.LayoutParams(-1,-1));
         player.addView(controlsDock,new FrameLayout.LayoutParams(-1,-1));
         playerPage = player; pages.addView(playerPage,new FrameLayout.LayoutParams(-1,-1));
         settingsPage = buildSettings(); pages.addView(settingsPage,new FrameLayout.LayoutParams(-1,-1));

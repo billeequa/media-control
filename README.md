@@ -15,8 +15,9 @@ Your choice is saved. Theme options are **Classic Green**, **AMOLED**, **Midnigh
 newer APK from this repository's latest stable release and opens Android's installer.
 Android asks you to approve installation.
 
-The transport buttons stay anchored above the tabs while artwork and metadata
-scroll separately on shorter screens. Title and artist stay on one line: long
+The transport buttons and metadata stay anchored above the tabs while artwork
+scrolls separately on shorter screens. The enlarged clock stays visible above
+the raised playback row. Title and artist stay on one line: long
 values loop continuously twice; the next copy slides smoothly to the normal
 starting position, slows to rest, and stays ellipsized. Equal metadata does not
 restart scrolling, and disabled system animations show a static line. Buffering replaces

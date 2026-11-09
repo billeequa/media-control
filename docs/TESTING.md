@@ -56,7 +56,7 @@ Logic coverage includes:
 - Readable text, secondary text and accent contrast in all ten themes. Saved
   theme IDs remain stable.
 
-The Android instrumentation checks fixed transport coordinates across long/empty
+The Android instrumentation checks visible clock above the raised row, fixed transport coordinates across long/empty
 metadata and loading/artwork, reserved single-line heights, animation completion
 and identical-metadata behavior, expanded tap routing through the actual view
 hierarchy, unchanged horizontal gaps, page-boundary clamping before both tabs,

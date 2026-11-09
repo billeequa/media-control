@@ -49,8 +49,8 @@ scripts/verify_signing.py before publishing; it pins the public certificate
 fingerprint. A prior v0.2.0 publication used a runner key, so the stable update
 series starts with v0.2.1. Keep old tags intact. See docs/RELEASING.md.
 
-Player transport controls are anchored outside the scrollable artwork/metadata
-area. Never let track text, loading, missing artwork or error/setup messages move
+Player transport controls and fixed-height metadata/clock are anchored outside
+the scrollable artwork area. Keep the clock visible above the raised controls. Never let track text, loading, missing artwork or error/setup messages move
 them vertically. Title and artist reserve fixed single-line heights; overflow
 scrolls continuously through two full loops, then brings a third copy smoothly to
 the default starting position and ends ellipsized, without restarting for identical metadata.
