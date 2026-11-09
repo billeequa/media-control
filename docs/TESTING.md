@@ -6,7 +6,9 @@
 playback speed, duration clamping, missing position/update time, future timestamps,
 reverse playback and elapsed/total formatting. Update checks cover numeric version
 ordering, equal/older releases, malformed versions, the exact repository asset
-path, HTTPS origin restrictions and malicious/lookalike URLs (34 checks total).
+path, HTTPS origin restrictions and malicious/lookalike URLs (47 checks total).
+Previous-button checks cover immediate restart, rapid second press, timeout,
+track/session changes, reset, missing capabilities and backwards timestamps.
 It needs Java 17 and no test libraries.
 
 ## Build checks
@@ -21,8 +23,8 @@ environment. GitHub Actions runs the full build and Android Lint. Its initial
 SDK setup tried to install the retired `tools` package; the workflow now explicitly
 requests `platform-tools` instead.
 
-No emulator/device playback or named music-app compatibility has been verified
-yet. Do not confuse an APK build with successful device operation.
+The user confirmed v0.2.1 works with foobar2000 on their phone. The new v0.3.0
+layout/previous behavior and other named music apps still need device checks. Do not confuse an APK build with successful device operation.
 
 ## Device acceptance checklist
 
@@ -33,8 +35,11 @@ Run on Android 8 and a recent Android version, ideally including the actual phon
 2. Start playback in foobar2000, Spotify, Pandora and Bandcamp separately. Record
    app/OS versions, session discovery, metadata, time/duration, pause/resume, restart
    and next; mark unsupported actions separately from failures.
-3. Restart seeks to zero in the **current** track. An unseekable stream must never
-   jump to a previous song. Next remains subject to the source's skip rules.
+3. Previous seeks to zero in the **current** track immediately. A second press
+   within one second goes to the previous track when advertised. After a timeout,
+   source/session/track change or Next, the first press restarts again. For a source
+   without seek support, Previous sends previous-track directly when supported.
+   Next remains subject to the source's skip rules.
 4. Pause for at least 10 seconds: elapsed position stays still. Resume: elapsed
    advances. Test a long track, missing metadata and a stream without duration.
 5. Start two sources and choose one. Another app beginning playback must not
@@ -87,3 +92,14 @@ against the saved key and pinned public fingerprint. A downloaded v0.2.0 APK is
 a negative regression fixture: its runner certificate must be rejected. The
 v0.2.1 local build is a positive fixture. Verify the published v0.2.1 bytes again
 after release, independent of workflow success.
+
+## Player layout acceptance
+
+On the user's phone and at narrow/landscape/large-font sizes, verify the app
+picker sits beside the larger heading, artwork is a centered square at 80% of
+window width, and progress follows the artist immediately. Confirm the footer,
+normal Playing/Paused labels and visible transport text are absent. Previous
+and Next use mirrored bar-and-triangle icons; Play/Pause uses large vector
+symbols inside 36 dp corners. TalkBack and long-press labels remain available.
+The app launcher uses the album-sleeve/play icon, while notification icons keep
+their simple white silhouette.

@@ -17,8 +17,9 @@ import java.util.*;
 public class MainActivity extends Activity implements MediaHub.Observer {
     private static final int BG = Color.rgb(16,18,15), PANEL = Color.rgb(37,41,34), ACCENT = Color.rgb(212,246,107), WHITE = Color.rgb(245,247,239), MUTED = Color.rgb(163,172,155);
     private MediaHub hub;
-    private TextView title, artist, timing, status;
-    private Button source, access, notifications, restart, toggle, next;
+    private TextView title, artist, timing, totalTime, status;
+    private Button source, access, notifications;
+    private TransportButton previous, toggle, next;
     private ProgressBar progress;
     private ImageView artwork;
     private View playerPage, settingsPage;
@@ -26,9 +27,8 @@ public class MainActivity extends Activity implements MediaHub.Observer {
     private boolean settingsVisible;
     private AppUpdater updater;
     private int displaySize;
-    private int titleSize() { return new int[]{28,34,42}[displaySize]; }
-    private int controlSize() { return new int[]{120,160,212}[displaySize]; }
-    private int controlTextSize() { return new int[]{18,22,28}[displaySize]; }
+    private int titleSize() { return new int[]{26,32,38}[displaySize]; }
+    private int controlSize() { return new int[]{92,112,144}[displaySize]; }
     private final Handler main = new Handler(Looper.getMainLooper());
     private final Runnable tick = new Runnable() { @Override public void run() { updateProgress(); main.postDelayed(this, 500); } };
     @Override public void onCreate(Bundle state) {
@@ -39,7 +39,7 @@ public class MainActivity extends Activity implements MediaHub.Observer {
         FrameLayout pages = new FrameLayout(this);
         root.addView(pages, new LinearLayout.LayoutParams(-1,0,1));
         ScrollView scroll = new ScrollView(this); scroll.setFillViewport(true); scroll.setBackgroundColor(BG);
-        LinearLayout body = new LinearLayout(this); body.setOrientation(LinearLayout.VERTICAL); body.setPadding(dp(24),dp(18),dp(24),dp(24));
+        LinearLayout body = new LinearLayout(this); body.setOrientation(LinearLayout.VERTICAL); body.setPadding(dp(20),dp(10),dp(20),dp(10));
         scroll.addView(body,new ScrollView.LayoutParams(-1,-1));
         // Keep touch targets away from system gestures when edge-to-edge is enforced.
         root.setOnApplyWindowInsetsListener((v, insets) -> {
@@ -51,34 +51,42 @@ public class MainActivity extends Activity implements MediaHub.Observer {
             }
             return insets;
         });
-        TextView heading = text("BIG PHONE PLAYER",14,MUTED); heading.setLetterSpacing(.13f); body.addView(heading);
-        source = button("Choose a music app",WHITE,PANEL); source.setTextSize(16); source.setOnClickListener(v -> chooseSource());
-        body.addView(source,params(-1,56,16));
+        LinearLayout header = new LinearLayout(this); header.setGravity(Gravity.CENTER_VERTICAL);
+        TextView heading = text("BIG PHONE PLAYER",18,WHITE); heading.setLetterSpacing(.07f); heading.setMaxLines(2);
+        heading.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));
+        header.addView(heading,new LinearLayout.LayoutParams(0,-2,1.3f));
+        source = button("Choose app  ▾",WHITE,PANEL); source.setTextSize(14); source.setMaxLines(1); source.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        source.setMinWidth(0); source.setMinimumWidth(0); source.setContentDescription("Choose music app"); source.setOnClickListener(v -> chooseSource());
+        LinearLayout.LayoutParams sourceParams = new LinearLayout.LayoutParams(0,dp(48),1); sourceParams.leftMargin=dp(12); header.addView(source,sourceParams);
+        body.addView(header,params(-1,-2,0));
         access = button("Enable media access",BG,ACCENT); access.setOnClickListener(v -> explainAccess()); body.addView(access,params(-1,56,12));
         notifications = button("Enable notification controls",WHITE,PANEL); notifications.setTextSize(15); notifications.setOnClickListener(v -> enableNotifications()); body.addView(notifications,params(-1,52,8));
-        artwork = new ImageView(this); artwork.setScaleType(ImageView.ScaleType.CENTER_CROP); artwork.setContentDescription("Album artwork");
-        LinearLayout.LayoutParams artParams = params(100,100,28); artParams.gravity = Gravity.START; body.addView(artwork,artParams);
-        title = text("Start your music",titleSize(),WHITE); title.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL)); title.setMaxLines(4); body.addView(title,params(-1,-2,24));
-        artist = text("",new int[]{18,20,24}[displaySize],MUTED); body.addView(artist,params(-1,-2,8));
-        status = text("",14,MUTED); body.addView(status,params(-1,-2,14));
-        View spacer = new View(this); body.addView(spacer,new LinearLayout.LayoutParams(1,dp(22),1));
+        artwork = new CoverArtwork(this); artwork.setContentDescription("Album artwork");
+        LinearLayout.LayoutParams artParams = params(-2,-2,16); artParams.gravity=Gravity.CENTER_HORIZONTAL; body.addView(artwork,artParams);
+        title = text("Start your music",titleSize(),WHITE); title.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL)); title.setMaxLines(3); body.addView(title,params(-1,-2,16));
+        artist = text("",new int[]{17,19,23}[displaySize],MUTED); body.addView(artist,params(-1,-2,2));
         progress = new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal); progress.setMax(1000); progress.setProgressTintList(android.content.res.ColorStateList.valueOf(ACCENT)); progress.setProgressBackgroundTintList(android.content.res.ColorStateList.valueOf(PANEL));
-        body.addView(progress,params(-1,8,24));
-        timing = text("— / —",new int[]{16,18,22}[displaySize],MUTED); timing.setTypeface(Typeface.MONOSPACE); body.addView(timing,params(-1,-2,12));
+        body.addView(progress,params(-1,4,10));
+        LinearLayout clock = new LinearLayout(this); clock.setGravity(Gravity.CENTER_VERTICAL);
+        timing = text("—",new int[]{14,16,19}[displaySize],MUTED); timing.setTypeface(Typeface.MONOSPACE);
+        totalTime = text("—",new int[]{14,16,19}[displaySize],MUTED); totalTime.setTypeface(Typeface.MONOSPACE); totalTime.setGravity(Gravity.END);
+        clock.addView(timing,new LinearLayout.LayoutParams(0,-2,1)); clock.addView(totalTime,new LinearLayout.LayoutParams(0,-2,1)); body.addView(clock,params(-1,-2,5));
+        status = text("",14,MUTED); status.setVisibility(View.GONE); body.addView(status,params(-1,-2,10));
         LinearLayout controls = new LinearLayout(this); controls.setOrientation(LinearLayout.HORIZONTAL);
-        restart = button("↺\nRestart",WHITE,PANEL); restart.setContentDescription("Restart current song"); restart.setTextSize(controlTextSize());
-        toggle = button("▶\nPlay",BG,ACCENT); toggle.setContentDescription("Play"); toggle.setTextSize(controlTextSize()+4);
-        next = button("▸|\nNext",WHITE,PANEL); next.setContentDescription("Next song"); next.setTextSize(controlTextSize());
-        for (Button b : new Button[]{restart,toggle,next}) { LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,dp(controlSize()),1); lp.setMargins(dp(3),0,dp(3),0); controls.addView(b,lp); }
-        restart.setOnClickListener(v -> hub.command(MediaHub.RESTART,hub.source())); toggle.setOnClickListener(v -> hub.command(MediaHub.PLAY,hub.source())); next.setOnClickListener(v -> hub.command(MediaHub.NEXT,hub.source()));
-        body.addView(controls,params(-1,-2,24));
-        TextView footer = text("Your music app plays. This screen controls.",12,MUTED); footer.setGravity(Gravity.CENTER); body.addView(footer,params(-1,-2,22));
+        previous = new TransportButton(this,TransportButton.Symbol.PREVIOUS,false); previous.setContentDescription("Previous. Tap once to restart, twice for the previous track."); previous.setTooltipText("Previous");
+        toggle = new TransportButton(this,TransportButton.Symbol.PLAY,true); toggle.setContentDescription("Play"); toggle.setTooltipText("Play");
+        next = new TransportButton(this,TransportButton.Symbol.NEXT,false); next.setContentDescription("Next track"); next.setTooltipText("Next");
+        for (Button control : new Button[]{previous,toggle,next}) {
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,dp(controlSize()),1); lp.setMargins(dp(4),0,dp(4),0); controls.addView(control,lp);
+        }
+        previous.setOnClickListener(v -> hub.command(MediaHub.PREVIOUS,hub.source())); toggle.setOnClickListener(v -> hub.command(MediaHub.PLAY,hub.source())); next.setOnClickListener(v -> hub.command(MediaHub.NEXT,hub.source()));
+        body.addView(controls,params(-1,-2,16));
         playerPage = scroll; pages.addView(playerPage,new FrameLayout.LayoutParams(-1,-1));
         settingsPage = buildSettings(); pages.addView(settingsPage,new FrameLayout.LayoutParams(-1,-1));
-        LinearLayout tabs = new LinearLayout(this); tabs.setPadding(dp(20),dp(8),dp(20),dp(12));
+        LinearLayout tabs = new LinearLayout(this); tabs.setPadding(dp(20),dp(6),dp(20),dp(8));
         playerTab = button("Player", BG, ACCENT); settingsTab = button("Settings", WHITE, PANEL);
         for (Button tab : new Button[]{playerTab,settingsTab}) {
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,dp(56),1); lp.setMargins(dp(4),0,dp(4),0); tabs.addView(tab,lp);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,dp(48),1); lp.setMargins(dp(4),0,dp(4),0); tabs.addView(tab,lp);
         }
         playerTab.setOnClickListener(v -> showTab(false)); settingsTab.setOnClickListener(v -> showTab(true));
         root.addView(tabs); setContentView(root); showTab(settingsVisible);
@@ -119,7 +127,7 @@ public class MainActivity extends Activity implements MediaHub.Observer {
     private void showTab(boolean settings) {
         settingsVisible = settings; playerPage.setVisibility(settings ? View.GONE : View.VISIBLE); settingsPage.setVisibility(settings ? View.VISIBLE : View.GONE);
         playerTab.setSelected(!settings); settingsTab.setSelected(settings);
-        playerTab.setAlpha(settings ? .55f : 1f); settingsTab.setAlpha(settings ? 1f : .55f);
+        styleTab(playerTab,!settings); styleTab(settingsTab,settings);
     }
     @Override protected void onSaveInstanceState(Bundle state) { state.putBoolean("settings_visible",settingsVisible); super.onSaveInstanceState(state); }
     @Override protected void onDestroy() { if (updater != null) updater.close(); super.onDestroy(); }
@@ -130,24 +138,27 @@ public class MainActivity extends Activity implements MediaHub.Observer {
         source.setText(hub.sourceLabel() + "  ▾");
         access.setVisibility(hub.hasAccess() ? View.GONE : View.VISIBLE);
         notifications.setVisibility(getSystemService(NotificationManager.class).areNotificationsEnabled() ? View.GONE : View.VISIBLE);
-        Bitmap art = hub.art(); artwork.setImageBitmap(art); artwork.setVisibility(art == null ? View.GONE : View.VISIBLE);
+        Bitmap art = hub.art();
+        if (art == null) artwork.setImageResource(R.drawable.ic_album_placeholder); else artwork.setImageBitmap(art);
+        artwork.setContentDescription(art == null ? "Album artwork unavailable" : "Album artwork");
         boolean playing = hub.playing();
-        toggle.setText(playing ? "Ⅱ\nPause" : "▶\nPlay"); toggle.setContentDescription(playing ? "Pause" : "Play");
-        enable(restart,hub.supports(PlaybackState.ACTION_SEEK_TO)); enable(toggle,hub.canToggle()); enable(next,hub.supports(PlaybackState.ACTION_SKIP_TO_NEXT));
-        if (!hub.hasAccess()) status.setText("Enable media access to connect to your music app.");
-        else if (!hub.available()) status.setText(hub.source() == null ? "Start a song in another app, then return here." : "Start playback in " + hub.sourceLabel() + ", or choose another source above.");
+        toggle.setSymbol(playing ? TransportButton.Symbol.PAUSE : TransportButton.Symbol.PLAY); toggle.setContentDescription(playing ? "Pause" : "Play"); toggle.setTooltipText(playing ? "Pause" : "Play");
+        enable(previous,hub.canPrevious()); enable(toggle,hub.canToggle()); enable(next,hub.supports(PlaybackState.ACTION_SKIP_TO_NEXT));
+        String message = "";
+        if (!hub.hasAccess()) message = "Enable media access to connect to your music app.";
+        else if (!hub.available()) message = hub.source() == null ? "Start a song in another app, then return here." : "Start playback in " + hub.sourceLabel() + ", or choose another app above.";
         else {
-            PlaybackState state = hub.state(); int s = state == null ? PlaybackState.STATE_NONE : state.getState();
-            String info = s == PlaybackState.STATE_BUFFERING || s == PlaybackState.STATE_CONNECTING ? "Buffering…" : s == PlaybackState.STATE_ERROR ? "The music app reported a playback error." : playing ? "Playing" : "Paused";
-            if (!hub.supports(PlaybackState.ACTION_SEEK_TO)) info += " · Restart unavailable in this app";
-            status.setText(info);
+            PlaybackState state = hub.state(); int playback = state == null ? PlaybackState.STATE_NONE : state.getState();
+            if (playback == PlaybackState.STATE_ERROR) message = "The music app reported a playback error.";
+            else if (playback == PlaybackState.STATE_BUFFERING || playback == PlaybackState.STATE_CONNECTING) message = "Buffering…";
         }
+        status.setText(message); status.setVisibility(message.isEmpty() ? View.GONE : View.VISIBLE);
         updateProgress();
     }
     private void updateProgress() {
         if (timing == null) return;
         long position = hub.position(), duration = hub.duration();
-        timing.setText(PlaybackMath.time(position) + " / " + PlaybackMath.time(duration));
+        timing.setText(PlaybackMath.time(position)); totalTime.setText(PlaybackMath.time(duration));
         progress.setProgress(duration > 0 && position >= 0 ? (int)(1000.0 * position / duration) : 0);
         progress.setContentDescription("Elapsed " + PlaybackMath.time(position) + " of " + PlaybackMath.time(duration));
     }
@@ -169,12 +180,17 @@ public class MainActivity extends Activity implements MediaHub.Observer {
         else startActivity(new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE,getPackageName()));
     }
     @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] results) { super.onRequestPermissionsResult(requestCode,permissions,results); hub.refresh(); }
+    private void styleTab(Button tab,boolean selected) {
+        GradientDrawable shape = new GradientDrawable(); shape.setColor(selected ? ACCENT : PANEL); shape.setCornerRadius(dp(24));
+        tab.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(Color.argb(40,255,255,255)),shape,null));
+        tab.setTextColor(selected ? BG : MUTED);
+    }
     private void enable(Button b,boolean enabled) { b.setEnabled(enabled); b.setAlpha(enabled ? 1f : .35f); }
     private int dp(int value) { return Math.round(value*getResources().getDisplayMetrics().density); }
     private TextView text(String value,int size,int color) { TextView v = new TextView(this); v.setText(value); v.setTextSize(size); v.setTextColor(color); v.setLineSpacing(dp(3),1f); return v; }
     private Button button(String value,int color,int background) {
         Button b = new Button(this); b.setText(value); b.setTextColor(color); b.setAllCaps(false); b.setGravity(Gravity.CENTER); b.setPadding(dp(8),dp(8),dp(8),dp(8));
-        GradientDrawable shape = new GradientDrawable(); shape.setColor(background); shape.setCornerRadius(dp(20));
+        GradientDrawable shape = new GradientDrawable(); shape.setColor(background); shape.setCornerRadius(dp(24));
         android.content.res.ColorStateList ripple = android.content.res.ColorStateList.valueOf(Color.argb(45,255,255,255));
         b.setBackground(new android.graphics.drawable.RippleDrawable(ripple,shape,null));
         b.setMinHeight(dp(48)); return b;

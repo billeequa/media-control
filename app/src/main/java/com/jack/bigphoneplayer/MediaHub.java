@@ -12,7 +12,9 @@ import java.util.*;
 
 final class MediaHub {
     static final String PLAY = "com.jack.bigphoneplayer.PLAY";
-    static final String RESTART = "com.jack.bigphoneplayer.RESTART";
+    static final String PREVIOUS = "com.jack.bigphoneplayer.PREVIOUS";
+    // Keep old notifications from the previous APK functional during an update.
+    private static final String LEGACY_RESTART = "com.jack.bigphoneplayer.RESTART";
     static final String NEXT = "com.jack.bigphoneplayer.NEXT";
     private static final int NOTICE = 42;
     private static MediaHub instance;
@@ -38,6 +40,7 @@ final class MediaHub {
     private MediaController controller;
     private String preferred;
     private boolean connected;
+    private final PreviousPress previousPress = new PreviousPress();
     private final Runnable notificationTick = new Runnable() {
         @Override public void run() {
             if (!connected || controller == null) return;
@@ -99,6 +102,7 @@ final class MediaHub {
     String source() { return preferred; }
     String sourceLabel() { return label(preferred); }
     void select(String packageName) {
+        previousPress.reset();
         preferred = packageName;
         preferences.edit().putString("source", preferred).apply();
         refresh();
@@ -128,6 +132,7 @@ final class MediaHub {
         return state != null && state.getState() == PlaybackState.STATE_PLAYING;
     }
     private void detach() {
+        previousPress.reset();
         if (controller != null) controller.unregisterCallback(callback);
         controller = null;
     }
@@ -137,6 +142,7 @@ final class MediaHub {
     boolean playing() { return controller != null && playing(controller); }
     boolean supports(long action) { PlaybackState s = state(); return s != null && (s.getActions() & action) != 0; }
     boolean canToggle() { return supports(PlaybackState.ACTION_PLAY_PAUSE) || supports(playing() ? PlaybackState.ACTION_PAUSE : PlaybackState.ACTION_PLAY); }
+    boolean canPrevious() { return supports(PlaybackState.ACTION_SEEK_TO) || supports(PlaybackState.ACTION_SKIP_TO_PREVIOUS); }
     String title() {
         MediaMetadata m = metadata();
         if (m == null) return available() ? "Track information unavailable" : "Start your music";
@@ -153,9 +159,9 @@ final class MediaHub {
     Bitmap art() {
         MediaMetadata m = metadata();
         if (m == null) return null;
-        Bitmap b = m.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON);
-        if (b == null) b = m.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART);
+        Bitmap b = m.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART);
         if (b == null) b = m.getBitmap(MediaMetadata.METADATA_KEY_ART);
+        if (b == null) b = m.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON);
         return b;
     }
     long duration() { MediaMetadata m = metadata(); return m == null || !m.containsKey(MediaMetadata.METADATA_KEY_DURATION) ? -1 : m.getLong(MediaMetadata.METADATA_KEY_DURATION); }
@@ -177,8 +183,18 @@ final class MediaHub {
                     controller.dispatchMediaButtonEvent(new android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE));
                     controller.dispatchMediaButtonEvent(new android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE));
                 }
-            } else if (RESTART.equals(action) && supports(PlaybackState.ACTION_SEEK_TO)) transport.seekTo(0);
-            else if (NEXT.equals(action) && supports(PlaybackState.ACTION_SKIP_TO_NEXT)) transport.skipToNext();
+            } else if (PREVIOUS.equals(action)) {
+                MediaMetadata metadata = metadata();
+                String id = metadata == null ? "" : metadata.getString(MediaMetadata.METADATA_KEY_MEDIA_ID);
+                String track = (id == null ? "" : id) + "|" + title() + "|" + artist();
+                PreviousPress.Action result = previousPress.press(SystemClock.elapsedRealtime(),controller.getSessionToken(),track,
+                    supports(PlaybackState.ACTION_SEEK_TO),supports(PlaybackState.ACTION_SKIP_TO_PREVIOUS));
+                if (result == PreviousPress.Action.RESTART) transport.seekTo(0);
+                else if (result == PreviousPress.Action.PREVIOUS) transport.skipToPrevious();
+            } else if (LEGACY_RESTART.equals(action) && supports(PlaybackState.ACTION_SEEK_TO)) transport.seekTo(0);
+            else if (NEXT.equals(action) && supports(PlaybackState.ACTION_SKIP_TO_NEXT)) {
+                previousPress.reset(); transport.skipToNext();
+            }
         } catch (RuntimeException exception) { refresh(); }
     }
     private void emit() {
@@ -203,7 +219,7 @@ final class MediaHub {
             .setVisibility(Notification.VISIBILITY_PUBLIC).setOnlyAlertOnce(true)
             .setShowWhen(false).setOngoing(playing()).setCategory(Notification.CATEGORY_TRANSPORT);
         Bitmap artwork = art(); if (artwork != null) builder.setLargeIcon(artwork);
-        if (supports(PlaybackState.ACTION_SEEK_TO)) builder.addAction(new Notification.Action.Builder(android.R.drawable.ic_media_rew, "Restart", action(RESTART, 1)).build());
+        if (canPrevious()) builder.addAction(new Notification.Action.Builder(android.R.drawable.ic_media_previous, "Previous", action(PREVIOUS, 1)).build());
         if (canToggle()) builder.addAction(new Notification.Action.Builder(playing() ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play, playing() ? "Pause" : "Play", action(PLAY, 2)).build());
         if (supports(PlaybackState.ACTION_SKIP_TO_NEXT)) builder.addAction(new Notification.Action.Builder(android.R.drawable.ic_media_next, "Next", action(NEXT, 3)).build());
         if (duration() > 0 && position() >= 0) builder.setProgress(1000, (int)(1000.0 * position() / duration()), false);

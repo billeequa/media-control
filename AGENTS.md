@@ -1,14 +1,19 @@
 # Big Phone Player
 
 Native Android controller for another app's already-started playback. Keep the
-screen simple: large restart, play/pause and next buttons, prominent track title
-and elapsed/total time. Artwork is secondary. No catalog, streaming, login,
+screen simple: large symbol-only previous, play/pause and next buttons, prominent
+track title and elapsed/total time. Center a square album cover at 80% of the
+window width. Keep the source picker beside the app heading, progress directly
+below the artist, and normal playback-state labels/footer copy hidden. No catalog, streaming, login,
 audio playback engine or proxy media session. Internet access is only for
 user-initiated GitHub update checks and APK downloads.
 
 Use the platform MediaSessionManager and an explicitly enabled notification
-listener. Commands must respect the source's advertised capabilities. Restart
-means seek to zero, never previous track. Keep the selected source pinned until
+listener. Commands must respect the source's advertised capabilities. Previous immediately
+seeks to zero on one press, then skips to the previous track on a second press
+within one second of the same track/session. If seeking is unsupported, Previous
+sends the previous-track command directly when supported. Respect capabilities
+and reset the double-press state when changing source/session or tapping Next. Keep the selected source pinned until
 the user changes it, and do not redirect stale notification actions to another
 source. Notification access is broad: explain it before opening settings, and
 do not inspect or store notification contents.

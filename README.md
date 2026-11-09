@@ -3,8 +3,10 @@
 A simple Android remote for the music app already playing on your phone.
 
 **Start a song in your usual app, then open Big Phone Player.** The controller
-shows the title, artist, progress and optional artwork, with three large buttons:
-restart the current song, play/pause, and next. It remembers your selected source
+shows a centered album cover at 80% of the screen width, title, artist and
+progress, with three large rounded, symbol-only buttons:
+previous, play/pause, and next. One Previous press restarts the track; a second
+press within one second goes to the previous track when supported. It remembers your selected source
 instead of switching to a browser or another app when that app makes sound.
 
 The **Settings** tab has **Compact**, **Large**, and **Extra large** player sizes.
@@ -18,7 +20,10 @@ Android asks you to approve installation.
 2. Open Big Phone Player and tap **Enable media access**. Read the explanation,
    enable notification access for Big Phone Player in Android settings, then return.
 3. On Android 13+, allow notifications if you want notification controls.
-4. Start music in your source app and return. Use the source button to choose
+4. If Android blocks notification access as a restricted setting after APK
+   installation, open Settings → Apps → Big Phone Player → ⋮ → Allow restricted
+   settings, authenticate, then return to enable media access.
+5. Start music in your source app and return. Use the source button to choose
    between active apps.
 
 The app adds a notification with supported transport buttons. You can use it
@@ -29,12 +34,14 @@ and lock-screen visibility. Expand the notification if buttons are hidden.
 ## Compatibility
 
 Designed for apps exposing standard Android media sessions, including the use
-case of foobar2000, Spotify, Pandora and Bandcamp. **Those named apps have not
-yet been verified on a device.** An app without an active media session will
+case of foobar2000, Spotify, Pandora and Bandcamp. **The user confirmed the app works with foobar2000 on their phone. The other
+named players have not yet been verified.** An app without an active media session will
 not appear. Available commands and metadata depend on the source:
 
-- Restart sends a seek to `0`, never a previous-track command. It is disabled
-  when the source does not advertise seeking.
+- Previous sends a seek to `0` immediately, then sends previous-track on a second
+  press within one second for the same session/track. If seeking is unavailable,
+  it sends previous-track directly when supported; if only seeking is supported,
+  repeated presses restart. If neither is supported, the button is disabled.
 - Next and play/pause are disabled when not supported. Subscription restrictions,
   ads and source-app policies still apply.
 - Unknown elapsed/total time is shown as `—`; live streams may have no duration.
