@@ -62,7 +62,7 @@ public class MainActivity extends Activity implements MediaHub.Observer {
         TextView heading = text("BIG PHONE PLAYER",18,palette.text); heading.setLetterSpacing(.07f); heading.setSingleLine(true); heading.setEllipsize(android.text.TextUtils.TruncateAt.END);
         heading.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));
         header.addView(heading,new LinearLayout.LayoutParams(0,-2,1.3f));
-        source = button("Choose app  ▾",palette.text,palette.panel); source.setTextSize(14); source.setMaxLines(1); source.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        source = button("Choose app  ▾",palette.text,palette.panel); source.setTextSize(19); source.setMaxLines(1); source.setEllipsize(android.text.TextUtils.TruncateAt.END);
         source.setMinWidth(0); source.setMinimumWidth(0); source.setContentDescription("Choose music app"); source.setOnClickListener(v -> chooseSource());
         LinearLayout.LayoutParams sourceParams = new LinearLayout.LayoutParams(0,dp(48),1); sourceParams.leftMargin=dp(12); header.addView(source,sourceParams);
         body.addView(header,params(-1,-2,0));
@@ -71,30 +71,33 @@ public class MainActivity extends Activity implements MediaHub.Observer {
         artwork = new CoverArtwork(this,palette); artwork.setContentDescription("Album artwork");
         LinearLayout.LayoutParams artParams = params(-2,-2,16); artParams.gravity=Gravity.CENTER_HORIZONTAL; body.addView(artwork,artParams);
         title = metadataLine("Start your music",titleSize(),palette.text); title.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL)); body.addView(title,lineParams(title,16));
-        artist = metadataLine("",new int[]{17,19,23}[displaySize],palette.muted); body.addView(artist,lineParams(artist,2));
+        artist = metadataLine("",new int[]{21,24,28}[displaySize],palette.muted); body.addView(artist,lineParams(artist,2));
         progress = new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal); progress.setMax(1000); progress.setProgressTintList(android.content.res.ColorStateList.valueOf(palette.accent)); progress.setProgressBackgroundTintList(android.content.res.ColorStateList.valueOf(palette.panel));
         body.addView(progress,params(-1,4,10));
         LinearLayout clock = new LinearLayout(this); clock.setGravity(Gravity.CENTER_VERTICAL);
-        timing = text("—",new int[]{14,16,19}[displaySize],palette.muted); timing.setTypeface(Typeface.MONOSPACE);
-        totalTime = text("—",new int[]{14,16,19}[displaySize],palette.muted); totalTime.setTypeface(Typeface.MONOSPACE); totalTime.setGravity(Gravity.END);
+        timing = text("—",new int[]{19,22,26}[displaySize],palette.muted); timing.setTypeface(Typeface.MONOSPACE);
+        totalTime = text("—",new int[]{19,22,26}[displaySize],palette.muted); totalTime.setTypeface(Typeface.MONOSPACE); totalTime.setGravity(Gravity.END);
         clock.addView(timing,new LinearLayout.LayoutParams(0,-2,1)); clock.addView(totalTime,new LinearLayout.LayoutParams(0,-2,1)); body.addView(clock,params(-1,-2,5));
         status = text("",14,palette.muted); status.setVisibility(View.GONE); body.addView(status,params(-1,-2,10));
-        controlsDock = new TransportDock(this,palette);
-        previous = new TransportButton(this,TransportButton.Symbol.PREVIOUS,false,palette); previous.setContentDescription("Previous. Tap once to restart, twice for the previous track."); previous.setTooltipText("Previous");
+        controlsDock = new TransportDock(this,palette,dp(controlSize()));
+        previous = new TransportButton(this,TransportButton.Symbol.PREVIOUS,false,palette); previous.setContentDescription("Previous. Tap once to restart, twice within three seconds for the previous track."); previous.setTooltipText("Previous");
         toggle = new TransportButton(this,TransportButton.Symbol.PLAY,true,palette); toggle.setContentDescription("Play"); toggle.setTooltipText("Play");
         next = new TransportButton(this,TransportButton.Symbol.NEXT,false,palette); next.setContentDescription("Next track"); next.setTooltipText("Next");
         for (Button control : new Button[]{previous,toggle,next}) {
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,dp(controlSize()),1); lp.setMargins(dp(4),0,dp(4),0); controlsDock.addView(control,lp);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,dp(controlSize()),1); lp.setMargins(dp(4),0,dp(4),0); controlsDock.addControl(control,lp);
         }
         previous.setOnClickListener(v -> hub.command(MediaHub.PREVIOUS,hub.source())); toggle.setOnClickListener(v -> hub.command(MediaHub.PLAY,hub.source())); next.setOnClickListener(v -> hub.command(MediaHub.NEXT,hub.source()));
-        LinearLayout player = new LinearLayout(this); player.setOrientation(LinearLayout.VERTICAL);
-        player.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
-        player.addView(controlsDock,new LinearLayout.LayoutParams(-1,-2));
+        FrameLayout player = new FrameLayout(this);
+        FrameLayout.LayoutParams contentParams=new FrameLayout.LayoutParams(-1,-1);
+        contentParams.bottomMargin=controlsDock.reservedHeight();
+        player.addView(scroll,contentParams);
+        player.addView(controlsDock,new FrameLayout.LayoutParams(-1,-1));
         playerPage = player; pages.addView(playerPage,new FrameLayout.LayoutParams(-1,-1));
         settingsPage = buildSettings(); pages.addView(settingsPage,new FrameLayout.LayoutParams(-1,-1));
         LinearLayout tabs = new LinearLayout(this); tabs.setPadding(dp(20),dp(6),dp(20),dp(8));
         playerTab = button("Player", palette.onAccent, palette.accent); settingsTab = button("Settings", palette.text, palette.panel);
         for (Button tab : new Button[]{playerTab,settingsTab}) {
+            tab.setTextSize(19);
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,dp(48),1); lp.setMargins(dp(4),0,dp(4),0); tabs.addView(tab,lp);
         }
         playerTab.setOnClickListener(v -> showTab(false)); settingsTab.setOnClickListener(v -> showTab(true));

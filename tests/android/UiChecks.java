@@ -8,6 +8,7 @@ import android.os.*;
 import android.view.*;
 import android.widget.*;
 import java.lang.reflect.*;
+import java.util.List;
 
 public class UiChecks extends Instrumentation {
     int checks=0;
@@ -45,28 +46,56 @@ public class UiChecks extends Instrumentation {
             check(p0.equals(rect(previous))&&t0.equals(rect(toggle))&&n0.equals(rect(next)),"Empty metadata/art moved controls");
             ui(()->title.setText("A second very long metadata value that should animate twice and then remain ellipsized in one reserved line"));settle();
             ValueAnimator animator=(ValueAnimator)field(title,"animation");check(animator!=null,"Overflow did not start scrolling");
-            ui(()->animator.setCurrentPlayTime(animator.getDuration()));settle();
+            Bitmap[] frames=new Bitmap[2];
+            ui(()->{
+                animator.setCurrentPlayTime(animator.getDuration()-1);
+                frames[0]=Bitmap.createBitmap(title.getWidth(),title.getHeight(),Bitmap.Config.ARGB_8888);
+                title.draw(new Canvas(frames[0]));
+                animator.end();
+                frames[1]=Bitmap.createBitmap(title.getWidth(),title.getHeight(),Bitmap.Config.ARGB_8888);
+                title.draw(new Canvas(frames[1]));
+            });settle();
+            int different=0,pixels=frames[0].getWidth()*frames[0].getHeight();
+            for(int y=0;y<frames[0].getHeight();y++)for(int x=0;x<frames[0].getWidth();x++)
+                if(frames[0].getPixel(x,y)!=frames[1].getPixel(x,y))different++;
+            check(different<pixels*.02,"Final scrolling copy jumped when changing to the static line");
+            frames[0].recycle();frames[1].recycle();
             check(field(title,"animation")==null,"Scrolling did not finish");
             ui(()->title.setText(title.getText().toString()));settle();
             check(field(title,"animation")==null,"Equal metadata restarted completed scrolling");
             int[] hits={0}; ui(()->{toggle.setEnabled(true);toggle.setOnClickListener(v->hits[0]++);});
-            Rect button=new Rect();toggle.getHitRect(button);float density=a.getResources().getDisplayMetrics().density;
-            tap(dock,button.centerX(),button.top-7*density);check(hits[0]==1,"Top vertical touch extension failed");
-            tap(dock,button.centerX(),button.bottom+7*density);check(hits[0]==2,"Bottom vertical touch extension failed");
-            tap(dock,button.left-2*density,button.top-7*density);check(hits[0]==2,"Hitbox extended horizontally");
-            tap(dock,button.centerX(),button.top-16*density);check(hits[0]==2,"Hitbox exceeded vertical allowance");
+            Rect button=new Rect(); toggle.getDrawingRect(button); ((ViewGroup)dock).offsetDescendantRectToMyCoords(toggle,button);
+            float density=a.getResources().getDisplayMetrics().density;
+            @SuppressWarnings("unchecked") List<Rect> areas=(List<Rect>)field(dock,"hitAreas");
+            Rect hit=areas.get(1);
+            check(hit.left==button.left&&hit.right==button.right,"Target changed horizontal bounds");
+            check(hit.top==Math.max(0,button.top-button.height()),"Top target is not one button height");
+            check(hit.bottom==Math.min(dock.getHeight(),button.bottom+button.height()),"Bottom target is not clamped at player boundary");
+            tap(dock,button.centerX(),button.top-button.height()*.9f);check(hits[0]==1,"Top vertical touch extension failed");
+            tap(dock,button.centerX(),Math.min(hit.bottom-1,button.bottom+button.height()*.9f));check(hits[0]==2,"Bottom vertical touch extension failed");
+            tap(dock,button.left-2*density,button.top-button.height()*.9f);check(hits[0]==2,"Hitbox extended horizontally");
+            tap(dock,button.centerX(),hit.top-1);check(hits[0]==2,"Hitbox exceeded vertical allowance");
+            View playerTab=(View)field(a,"playerTab"),settingsTab=(View)field(a,"settingsTab");
+            check(rect(dock).bottom<=rect(playerTab).top&&rect(dock).bottom<=rect(settingsTab).top,"Targets overlap navigation tabs");
+            View root=((ViewGroup)a.findViewById(android.R.id.content)).getChildAt(0);
+            Rect global=rect(toggle),rootRect=rect(root);
+            tap(root,global.centerX()-rootRect.left,global.top-rootRect.top-toggle.getHeight()*.8f);
+            check(hits[0]==3,"Overlay did not route an expanded tap through the real player hierarchy");
+            int[] tabHits={0};ui(()->settingsTab.setOnClickListener(v->tabHits[0]++));
+            Rect tabRect=rect(settingsTab);tap(root,tabRect.centerX()-rootRect.left,tabRect.centerY()-rootRect.top);
+            check(tabHits[0]==1&&hits[0]==3,"Transport stole Settings tap");
             Method hint=dock.getClass().getDeclaredMethod("showTouchHints");hint.setAccessible(true);
             ui(()->{try{hint.invoke(dock);}catch(Exception e){throw new RuntimeException(e);}});settle();
             check((Float)field(dock,"hintAlpha")>0,"Opening hint did not show");Thread.sleep(1400);
             check((Float)field(dock,"hintAlpha")==0,"Opening hint did not fade out");
-            String[] names={"AMOLED","Midnight","Paper"};int[] backgrounds={0xff000000,0xff0b1326,0xfffaf8f2};
-            for(int i=1;i<=3;i++) {
+            String[] names={"AMOLED","Midnight","Paper","Amber","Rose","Ocean","Violet","Monochrome","Cloud"};int[] backgrounds={0xff000000,0xff0b1326,0xfffaf8f2,0xff171109,0xff1b1019,0xff071a20,0xff151022,0xff080808,0xfff3f7ff};
+            for(int i=1;i<=names.length;i++) {
                 getTargetContext().getSharedPreferences("appearance",0).edit().putInt("theme",i).commit();
                 final Activity old=a;ui(old::finish);settle();a=open();settle();
                 Object palette=field(a,"palette");Field name=palette.getClass().getField("name");
                 check(names[i-1].equals(name.get(palette)),"Theme selection did not persist");
-                View root=((ViewGroup)a.findViewById(android.R.id.content)).getChildAt(0);
-                check(((ColorDrawable)root.getBackground()).getColor()==backgrounds[i-1],"Theme background not applied");
+                View themedRoot=((ViewGroup)a.findViewById(android.R.id.content)).getChildAt(0);
+                check(((ColorDrawable)themedRoot.getBackground()).getColor()==backgrounds[i-1],"Theme background not applied");
             }
             result.putString("ui_checks","passed");result.putInt("checks",checks);finish(Activity.RESULT_OK,result);
         } catch(Throwable t) { result.putString("ui_checks","FAILED");result.putString("failure",android.util.Log.getStackTraceString(t));result.putInt("checks",checks);finish(Activity.RESULT_CANCELED,result); }

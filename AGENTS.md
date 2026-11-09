@@ -11,7 +11,7 @@ user-initiated GitHub update checks and APK downloads.
 Use the platform MediaSessionManager and an explicitly enabled notification
 listener. Commands must respect the source's advertised capabilities. Previous immediately
 seeks to zero on one press, then skips to the previous track on a second press
-within one second of the same track/session. If seeking is unsupported, Previous
+within three seconds of the same track/session. If seeking is unsupported, Previous
 sends the previous-track command directly when supported. Respect capabilities
 and reset the double-press state when changing source/session or tapping Next. Keep the selected source pinned until
 the user changes it, and do not redirect stale notification actions to another
@@ -39,7 +39,7 @@ must use a stable signing key configured as an Actions secret, not a key in Git.
 
 This repository is the source of truth. Publish authorized changes here and
 check the GitHub Actions result. The build workflow produces an installable
-debug APK artifact. The manual Publish APK workflow creates stable-key GitHub
+debug APK artifact. The Publish APK workflow (manual or pushed version tag) creates stable-key GitHub
 releases for the updater after the signing secret is configured. Bump both
 versionCode and versionName for a new release; never replace an existing tag.
 
@@ -52,15 +52,21 @@ series starts with v0.2.1. Keep old tags intact. See docs/RELEASING.md.
 Player transport controls are anchored outside the scrollable artwork/metadata
 area. Never let track text, loading, missing artwork or error/setup messages move
 them vertically. Title and artist reserve fixed single-line heights; overflow
-scrolls twice and ends ellipsized, without restarting for identical metadata.
+scrolls continuously through two full loops, then brings a third copy smoothly to
+the default starting position and ends ellipsized, without restarting for identical metadata.
 Buffering/connecting uses Loading… inside the same square cover footprint, not a
 separate state label. Respect disabled system animations.
 
-Transport hotboxes extend 14 dp vertically above and below each button, with
-exactly unchanged horizontal bounds and gaps. Briefly outline these hotboxes on
+Transport hotboxes extend up to one visible button height vertically above and
+below each button, with unchanged horizontal bounds and gaps. They may cover
+the time/progress area, but must be clamped to the player page before the Player
+and Settings tabs. The transparent overlay must let other gestures reach the
+scrollable content outside its targets. Briefly outline these hotboxes on
 opening and fade the outline; never make the controls themselves disappear.
 
-Appearance settings persist Classic Green, AMOLED, Midnight and Paper themes.
+Appearance settings persist Classic Green, AMOLED, Midnight, Paper, Amber, Rose,
+Ocean, Violet, Monochrome and Cloud themes. Append new themes without reordering
+existing IDs.
 Theme all screen text, surfaces, controls and system bars, including a native
 light dialog theme for Paper. The launcher stays black with one green rounded
 play triangle. Do not tie launcher color to the selected in-app theme.

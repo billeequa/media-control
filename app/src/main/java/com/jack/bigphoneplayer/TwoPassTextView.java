@@ -17,7 +17,9 @@ import android.widget.TextView;
 final class TwoPassTextView extends TextView {
     private boolean ready,pending=true,scrolling;
     private ValueAnimator animation;
-    private StaticLayout fullText;
+    private StaticLayout fullText,restingText;
+    private float period;
+    private boolean rtl;
     private float offset;
     private final Runnable begin=this::beginIfNeeded;
     TwoPassTextView(Context context) {
@@ -55,20 +57,23 @@ final class TwoPassTextView extends TextView {
         if (width<=available || !ValueAnimator.areAnimatorsEnabled()) { invalidate(); return; }
         fullText=StaticLayout.Builder.obtain(value,0,value.length(),getPaint(),width+1)
             .setIncludePad(getIncludeFontPadding()).setMaxLines(1).setAlignment(Layout.Alignment.ALIGN_NORMAL).build();
-        float overflow=Math.max(0,fullText.getWidth()-available);
-        boolean rtl=fullText.getParagraphDirection(0)<0;
-        MarqueeCycle cycle=new MarqueeCycle(overflow,getResources().getDisplayMetrics().density);
+        rtl=fullText.getParagraphDirection(0)<0;
+        period=fullText.getWidth()+48*getResources().getDisplayMetrics().density;
+        restingText=StaticLayout.Builder.obtain(value,0,value.length(),getPaint(),available)
+            .setIncludePad(getIncludeFontPadding()).setMaxLines(1).setEllipsize(TextUtils.TruncateAt.END)
+            .setEllipsizedWidth(available).setAlignment(Layout.Alignment.ALIGN_NORMAL).build();
+        MarqueeCycle cycle=new MarqueeCycle(period,getResources().getDisplayMetrics().density);
         ValueAnimator run=ValueAnimator.ofFloat(0,1); animation=run; scrolling=true;
-        offset=rtl ? overflow : 0;
+        offset=0;
         run.setDuration(cycle.totalMs()); run.setInterpolator(new LinearInterpolator());
         run.addUpdateListener(frame -> {
             float fraction=cycle.fraction(Math.round(frame.getAnimatedFraction()*cycle.totalMs()));
-            offset=overflow*(rtl ? 1-fraction : fraction); invalidate();
+            offset=period*fraction; invalidate();
         });
         run.addListener(new AnimatorListenerAdapter() {
             @Override public void onAnimationEnd(Animator animator) {
                 if (animation!=animator) return;
-                animation=null; scrolling=false; fullText=null; offset=0; invalidate();
+                animation=null; scrolling=false; fullText=null; restingText=null; offset=0; invalidate();
             }
         });
         run.start();
@@ -77,13 +82,21 @@ final class TwoPassTextView extends TextView {
         removeCallbacks(begin);
         ValueAnimator old=animation; animation=null;
         if (old!=null) old.cancel();
-        scrolling=false; fullText=null; offset=0; invalidate();
+        scrolling=false; fullText=null; restingText=null; offset=0; invalidate();
     }
     @Override protected void onDraw(Canvas canvas) {
         if (!scrolling || fullText==null) { super.onDraw(canvas); return; }
         getPaint().setColor(getCurrentTextColor());
-        float y=getPaddingTop()+Math.max(0,(getHeight()-getPaddingTop()-getPaddingBottom()-fullText.getHeight())/2f);
+        // Match the native TextView baseline so the final handoff cannot jump vertically.
+        float y=getBaseline()-fullText.getLineBaseline(0);
+        int available=getWidth()-getPaddingLeft()-getPaddingRight();
         canvas.save(); canvas.clipRect(getPaddingLeft(),getPaddingTop(),getWidth()-getPaddingRight(),getHeight()-getPaddingBottom());
-        canvas.translate(getPaddingLeft()-offset,y); fullText.draw(canvas); canvas.restore();
+        for (int copy=0;copy<=2;copy++) {
+            StaticLayout layout=copy==2 ? restingText : fullText;
+            float x=rtl ? available-layout.getWidth()+offset-copy*period : copy*period-offset;
+            if (x+layout.getWidth()<0 || x>available) continue;
+            canvas.save(); canvas.translate(getPaddingLeft()+x,y); layout.draw(canvas); canvas.restore();
+        }
+        canvas.restore();
     }
 }

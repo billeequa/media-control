@@ -5,7 +5,7 @@ import java.util.Objects;
 /** Immediate restart, then previous on a second press of the same track. */
 public final class PreviousPress {
     public enum Action { NONE, RESTART, PREVIOUS }
-    public static final long DOUBLE_PRESS_MS = 1000;
+    public static final long DOUBLE_PRESS_MS = 3000;
     private boolean armed;
     private long lastPress;
     private Object session;

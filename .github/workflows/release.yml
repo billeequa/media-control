@@ -2,6 +2,8 @@ name: Publish APK
 
 on:
   workflow_dispatch:
+  push:
+    tags: ['v*']
 
 permissions:
   contents: write
@@ -47,6 +49,10 @@ jobs:
           version=$(sed -n "s/.*versionName '\([^']*\)'.*/\1/p" app/build.gradle)
           if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then exit 1; fi
           tag="v$version"
+          if [ "$GITHUB_REF_TYPE" = tag ] && [ "$GITHUB_REF_NAME" != "$tag" ]; then
+            echo 'Pushed tag must match app/build.gradle versionName.'
+            exit 1
+          fi
           if gh release view "$tag" >/dev/null 2>&1; then
             echo 'This version already has a release. Bump versionCode and versionName first.'
             exit 1

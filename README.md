@@ -6,23 +6,36 @@ A simple Android remote for the music app already playing on your phone.
 shows a centered album cover at 80% of the screen width, title, artist and
 progress, with three large rounded, symbol-only buttons:
 previous, play/pause, and next. One Previous press restarts the track; a second
-press within one second goes to the previous track when supported. It remembers your selected source
+press within three seconds goes to the previous track when supported. It remembers your selected source
 instead of switching to a browser or another app when that app makes sound.
 
 The **Settings** tab has **Compact**, **Large**, and **Extra large** player sizes.
 Your choice is saved. Theme options are **Classic Green**, **AMOLED**, **Midnight**,
-and **Paper**, and are also saved. It also has a **Check for updates** button that downloads a
+**Paper**, **Amber**, **Rose**, **Ocean**, **Violet**, **Monochrome**, and **Cloud**, and are also saved. It also has a **Check for updates** button that downloads a
 newer APK from this repository's latest stable release and opens Android's installer.
 Android asks you to approve installation.
 
 The transport buttons stay anchored above the tabs while artwork and metadata
 scroll separately on shorter screens. Title and artist stay on one line: long
-values scroll from start to end twice, then show an ellipsis. Buffering replaces
+values loop continuously twice; the next copy slides smoothly to the normal
+starting position, slows to rest, and stays ellipsized. Equal metadata does not
+restart scrolling, and disabled system animations show a static line. Buffering replaces
 the cover with centered **Loading…** inside the same square. Each transport
-button accepts taps an additional 14 dp above and below its visible bounds;
-horizontal bounds stay unchanged. A brief fading outline shows these touch areas
+button accepts taps up to one button height above and below its visible bounds;
+horizontal bounds stay unchanged. Targets may cover the time bar but stop before
+the Player and Settings tabs. The playback row sits higher, and artist, time,
+source-picker and tab labels are larger. A brief fading outline shows these touch areas
 when opening the player. The launcher icon is a green rounded play triangle on
 black.
+
+## Install or update
+
+Download [the latest APK](https://github.com/billeequa/media-control/releases/latest/download/big-phone-player.apk),
+open it on Android and approve installation. Existing v0.2.1+ installs can instead
+use **Settings → Check for updates**. The signing identity is unchanged, so an
+ordinary update preserves settings; do not uninstall first. See the
+[changelog](CHANGELOG.md) for changes and [verification](docs/TESTING.md) for what
+has actually been tested.
 
 ## Setup
 
@@ -49,7 +62,7 @@ named players have not yet been verified.** An app without an active media sessi
 not appear. Available commands and metadata depend on the source:
 
 - Previous sends a seek to `0` immediately, then sends previous-track on a second
-  press within one second for the same session/track. If seeking is unavailable,
+  press within three seconds for the same session/track. If seeking is unavailable,
   it sends previous-track directly when supported; if only seeking is supported,
   repeated presses restart. If neither is supported, the button is disabled.
 - Next and play/pause are disabled when not supported. Subscription restrictions,
