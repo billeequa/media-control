@@ -1,63 +1,55 @@
 # Publish app updates
 
-The Settings update button checks the latest stable GitHub release, downloads its
-`big-phone-player.apk` asset, validates the package/version/signing certificate,
-and opens Android's installer. It does not use GitHub Actions artifacts or install
-silently. APKs must be signed with the same key as the installed app.
+The repository is public and its persistent signing key is configured as the
+Actions secret `ANDROID_DEBUG_KEYSTORE_BASE64`. Never commit or publish that
+secret, its base64 text, or the keystore. Keep the private signing backup safe.
 
-## One-time setup
+The public signing-certificate SHA-256 fingerprint is:
 
-1. Make **billeequa/media-control** public if you want the current no-login updater
-   to work. Private releases require authentication; no token is embedded in the app.
-   The updater explains when the repository is private or no release exists.
-2. Create and securely back up one persistent signing keystore. For this personal
-   debug-build distribution, use the Android debug alias/password so Gradle can
-   use it without additional signing configuration:
+```
+c20208114802163760627405beed656a63a997a8186da74d77d929818e90a51b
+```
 
-   ```sh
-   keytool -genkeypair -keystore media-control.keystore -alias androiddebugkey \
-     -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 \
-     -dname 'CN=Big Phone Player,O=Personal,C=US'
-   ```
+The workflow sets `UPDATE_KEYSTORE_PATH`, Gradle explicitly uses that keystore,
+and `scripts/verify_signing.py` checks both the configured key and the APK against
+this fingerprint before publishing. Release packaging bypasses the build cache.
+A successful build alone is not proof of the correct signing identity.
 
-   You can instead reuse the exact `~/.android/debug.keystore` that signed an
-   already-installed local build. Do not generate a new key if preserving that
-   installation's update compatibility. Never commit the keystore.
-3. Base64-encode the keystore and add it as the repository Actions secret
-   **ANDROID_DEBUG_KEYSTORE_BASE64** at Settings → Secrets and variables → Actions.
-
-   Linux/macOS:
-
-   ```sh
-   base64 < media-control.keystore | tr -d '\n' > signing-key-base64.txt
-   ```
-
-   Windows PowerShell:
-
-   ```powershell
-   [Convert]::ToBase64String([IO.File]::ReadAllBytes((Resolve-Path 'media-control.keystore'))) | Set-Content -NoNewline signing-key-base64.txt
-   ```
-
-   Paste that file's contents as the secret, keep the original key in a secure
-   backup, and remove the temporary text file. The secret is the private key;
-   do not put it in the repository or release assets. The connected GitHub
-   integration cannot configure repository secrets, so this step is manual.
-4. In Actions, run **Publish APK** on `main`. It builds and lints, creates a
-   `v0.2.0` release from the current source version and attaches the APK. Install
-   this release APK for a baseline that future releases can update in place.
-
-Normal CI also uses that secret when available. Without it, CI artifacts use
-temporary runner keys and are development builds; installing one may require
-uninstalling it before switching to the persistent-key release series.
-
-## Subsequent updates
+## Publish the next version
 
 1. Increase both `versionCode` and `versionName` in `app/build.gradle`.
 2. Push changes and wait for the Android build checks to pass.
-3. Run **Publish APK**. Existing releases are never overwritten.
-4. On the phone, open Settings → Check for updates → Download → Install. If
-   Android asks to allow installs from Big Phone Player, enable it, return to
-   Settings and tap **Install downloaded update**. Android asks you to confirm.
+3. In Actions, run **Publish APK** on `main`. It tests, builds, lints, checks the
+   persistent signing certificate, creates a new version tag and attaches
+   `big-phone-player.apk`. Existing release tags are never replaced.
+4. Check the published asset's SHA-256 digest and certificate after download.
 
-Current release builds are for personal sideloading and remain debug builds.
-Store distribution and production signing would be a separate setup.
+The Settings update button checks the latest stable GitHub release, downloads
+its APK, checks its package/version/certificate, and opens Android's installer.
+It does not use Actions artifacts or install silently. Android asks the user to
+approve installation. When prompted, allow installs from Big Phone Player, then
+return to Settings and tap **Install downloaded update**.
+
+## Initial installation
+
+Install **v0.2.1 or later** from Releases to join the persistent signing-key
+series. The first v0.2.0 publication used a temporary runner key; its tag is kept
+for history and should not be used as the update baseline. If an early test APK
+is already installed, Android may require uninstalling that test app first.
+Subsequent releases in the persistent-key series update in place.
+
+Current builds are personal sideloading debug builds, not store releases. The
+keystore alias is `androiddebugkey` and its store/key passwords are `android`;
+the private keystore itself must remain secret.
+
+## Restoring the key
+
+Use `media-control.keystore` from the private signing backup. Set the repository
+Actions secret `ANDROID_DEBUG_KEYSTORE_BASE64` to the exact contents of the
+backup's `signing-key-base64.txt`. The secret is base64 of the existing key,
+not a new generated key. Never replace it with a fresh key if preserving update
+compatibility. The verification step intentionally blocks a different key.
+
+For a local Gradle build, set `UPDATE_KEYSTORE_PATH` to that keystore. A fresh
+local Android debug key can produce a standalone test installation, but cannot
+replace the signed release installation.

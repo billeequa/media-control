@@ -69,7 +69,7 @@ Run on Android 8 and a recent Android version, ideally including the actual phon
    another network request. Cancelling Android's installer leaves that button usable.
 
 Full updater installation has not been device-tested. Public releases and the
-persistent signing secret must be configured before testing the successful path.
+persistent signing secret are configured; the successful installer path still needs a device.
 
 ## Implementation notes
 
@@ -78,3 +78,12 @@ callbacks; it does not start a mediaPlayback foreground service or create a dumm
 media session. Control notifications are ordinary transport notifications, so
 OEM lock-screen behavior may differ. The activity refreshes progress every 500 ms
 while visible; the notification refreshes every five seconds while playing.
+
+## Signing regression
+
+Run `ANDROID_HOME=/path/to/sdk python3 scripts/verify_signing.py` after building
+with the persistent key. It verifies the APK signature and checks its certificate
+against the saved key and pinned public fingerprint. A downloaded v0.2.0 APK is
+a negative regression fixture: its runner certificate must be rejected. The
+v0.2.1 local build is a positive fixture. Verify the published v0.2.1 bytes again
+after release, independent of workflow success.

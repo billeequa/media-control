@@ -37,3 +37,9 @@ check the GitHub Actions result. The build workflow produces an installable
 debug APK artifact. The manual Publish APK workflow creates stable-key GitHub
 releases for the updater after the signing secret is configured. Bump both
 versionCode and versionName for a new release; never replace an existing tag.
+
+The persistent signing key is configured. Never generate a replacement key for
+an ordinary release. Set UPDATE_KEYSTORE_PATH explicitly for Gradle and run
+scripts/verify_signing.py before publishing; it pins the public certificate
+fingerprint. A prior v0.2.0 publication used a runner key, so the stable update
+series starts with v0.2.1. Keep old tags intact. See docs/RELEASING.md.

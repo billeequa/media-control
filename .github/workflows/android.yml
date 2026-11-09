@@ -33,11 +33,15 @@ jobs:
             mkdir -p "$HOME/.android"
             printf '%s' "$UPDATE_KEY" | base64 --decode > "$HOME/.android/debug.keystore"
             chmod 600 "$HOME/.android/debug.keystore"
+            echo "UPDATE_KEYSTORE_PATH=$HOME/.android/debug.keystore" >> "$GITHUB_ENV"
           fi
       - name: Check playback logic
         run: bash scripts/test.sh
       - name: Build and lint
-        run: bash gradlew assembleDebug lintDebug --no-daemon
+        run: bash gradlew assembleDebug lintDebug --no-daemon --no-build-cache
+      - name: Verify persistent signature when configured
+        run: |
+          if [ -n "$UPDATE_KEYSTORE_PATH" ]; then python3 scripts/verify_signing.py; fi
       - uses: actions/upload-artifact@v4
         with:
           name: big-phone-player-debug
