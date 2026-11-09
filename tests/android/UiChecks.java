@@ -13,6 +13,7 @@ import java.util.List;
 public class UiChecks extends Instrumentation {
     int checks=0;
     Object field(Object o,String name) throws Exception { Field f=o.getClass().getDeclaredField(name); f.setAccessible(true); return f.get(o); }
+    Object uncheckedField(Object o,String name) { try{return field(o,name);}catch(Exception e){throw new RuntimeException(e);} }
     void ui(Runnable r) throws Exception { Throwable[] error={null}; runOnMainSync(()->{try{r.run();}catch(Throwable t){error[0]=t;}}); if(error[0]!=null)throw new Exception(error[0]); }
     void check(boolean value,String message) { checks++; if(!value)throw new AssertionError(message); }
     Rect rect(View v) { Rect r=new Rect(); v.getGlobalVisibleRect(r); return r; }
@@ -28,7 +29,16 @@ public class UiChecks extends Instrumentation {
             getTargetContext().getSharedPreferences("appearance",0).edit().putInt("theme",0).commit();
             Activity a=open(); settle();
             View previous=(View)field(a,"previous"),toggle=(View)field(a,"toggle"),next=(View)field(a,"next");
+            Activity initial=a;
+            ui(()->{
+                ((View)uncheckedField(initial,"access")).setVisibility(View.GONE);
+                ((View)uncheckedField(initial,"notifications")).setVisibility(View.GONE);
+                ((View)uncheckedField(initial,"status")).setVisibility(View.GONE);
+            });settle();
             Rect p0=rect(previous),t0=rect(toggle),n0=rect(next);
+            TextView clock=(TextView)field(a,"timing"),total=(TextView)field(a,"totalTime");
+            check(rect(clock).height()==clock.getHeight()&&rect(total).height()==total.getHeight(),"Larger time display clipped in normal player layout");
+            check(rect(clock).bottom<p0.top,"Raised playback row covers visible time display");
             TextView title=(TextView)field(a,"title"),artist=(TextView)field(a,"artist");
             View cover=(View)field(a,"artwork"),dock=(View)field(a,"controlsDock");
             int titleHeight=title.getHeight(),artistHeight=artist.getHeight(),coverSize=cover.getHeight();

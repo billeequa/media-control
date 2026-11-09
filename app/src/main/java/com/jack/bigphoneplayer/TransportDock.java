@@ -26,7 +26,7 @@ final class TransportDock extends FrameLayout {
     private float hintAlpha;
     TransportDock(Context context,AppPalette palette,int buttonHeight) {
         super(context); this.buttonHeight=buttonHeight;
-        bottomSpace=Math.round(buttonHeight*.65f)+dp(18);
+        bottomSpace=Math.round(buttonHeight*.4f)+dp(18);
         row=new LinearLayout(context); row.setOrientation(LinearLayout.HORIZONTAL);
         row.setPadding(dp(20),0,dp(20),0);
         FrameLayout.LayoutParams params=new FrameLayout.LayoutParams(-1,buttonHeight,Gravity.BOTTOM);
