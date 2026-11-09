@@ -38,7 +38,7 @@ public class UiChecks extends Instrumentation {
             Rect p0=rect(previous),t0=rect(toggle),n0=rect(next);
             TextView clock=(TextView)field(a,"timing"),total=(TextView)field(a,"totalTime");
             check(rect(clock).height()==clock.getHeight()&&rect(total).height()==total.getHeight(),"Larger time display clipped in normal player layout");
-            check(rect(clock).bottom<p0.top,"Raised playback row covers visible time display");
+            check(rect(clock).bottom<p0.top,"Raised playback row covers visible time display: clock="+rect(clock)+", previous="+p0+", dock="+rect((View)field(a,"controlsDock")));
             TextView title=(TextView)field(a,"title"),artist=(TextView)field(a,"artist");
             View cover=(View)field(a,"artwork"),dock=(View)field(a,"controlsDock");
             int titleHeight=title.getHeight(),artistHeight=artist.getHeight(),coverSize=cover.getHeight();
