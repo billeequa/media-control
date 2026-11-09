@@ -48,3 +48,19 @@ an ordinary release. Set UPDATE_KEYSTORE_PATH explicitly for Gradle and run
 scripts/verify_signing.py before publishing; it pins the public certificate
 fingerprint. A prior v0.2.0 publication used a runner key, so the stable update
 series starts with v0.2.1. Keep old tags intact. See docs/RELEASING.md.
+
+Player transport controls are anchored outside the scrollable artwork/metadata
+area. Never let track text, loading, missing artwork or error/setup messages move
+them vertically. Title and artist reserve fixed single-line heights; overflow
+scrolls twice and ends ellipsized, without restarting for identical metadata.
+Buffering/connecting uses Loading… inside the same square cover footprint, not a
+separate state label. Respect disabled system animations.
+
+Transport hotboxes extend 14 dp vertically above and below each button, with
+exactly unchanged horizontal bounds and gaps. Briefly outline these hotboxes on
+opening and fade the outline; never make the controls themselves disappear.
+
+Appearance settings persist Classic Green, AMOLED, Midnight and Paper themes.
+Theme all screen text, surfaces, controls and system bars, including a native
+light dialog theme for Paper. The launcher stays black with one green rounded
+play triangle. Do not tie launcher color to the selected in-app theme.

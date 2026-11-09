@@ -6,7 +6,7 @@
 playback speed, duration clamping, missing position/update time, future timestamps,
 reverse playback and elapsed/total formatting. Update checks cover numeric version
 ordering, equal/older releases, malformed versions, the exact repository asset
-path, HTTPS origin restrictions and malicious/lookalike URLs (47 checks total).
+path, HTTPS origin restrictions and malicious/lookalike URLs (84 checks total).
 Previous-button checks cover immediate restart, rapid second press, timeout,
 track/session changes, reset, missing capabilities and backwards timestamps.
 It needs Java 17 and no test libraries.
@@ -103,3 +103,22 @@ and Next use mirrored bar-and-triangle icons; Play/Pause uses large vector
 symbols inside 36 dp corners. TalkBack and long-press labels remain available.
 The app launcher uses the album-sleeve/play icon, while notification icons keep
 their simple white silhouette.
+
+## Version 0.4 appearance and geometry
+
+The new checks cover exactly two scrolling passes, stop/hold timing, density
+independence, invalid dimensions, and readable text/accent contrast for all four
+themes. Additional Android runtime checks should verify:
+
+- Long/short/empty title and artist have equal reserved line heights; two complete
+  passes stop at an ellipsized line. Pause/state callbacks with identical metadata
+  must not restart the animation. Check RTL, line breaks, emoji and reduced motion.
+- Transport button top/bottom coordinates stay identical across metadata lengths,
+  loading/cover/placeholder, setup/errors and scrolling the upper content.
+- Loading hides the old cover image and centers Loading… in the same square.
+- Taps up to 14 dp above/below each button work; side gaps and points outside the
+  vertical extension do not. The opening hint fades without changing dimensions.
+- All four themes persist through relaunch, preserve size/source choices, and
+  apply to settings, controls, cover placeholders, dialogs and system bars.
+- The black/green rounded triangle launcher is separate from the monochrome
+  notification icon.

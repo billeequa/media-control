@@ -16,16 +16,16 @@ final class TransportButton extends Button {
     private Symbol symbol;
     private final Paint ink = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-    TransportButton(Context context, Symbol symbol, boolean primary) {
+    TransportButton(Context context, Symbol symbol, boolean primary, AppPalette palette) {
         super(context); this.symbol = symbol;
         setText(""); setMinWidth(0); setMinimumWidth(0); setMinHeight(dp(64));
         setPadding(0,0,0,0); setAllCaps(false);
-        int[] colors = primary ? new int[]{Color.rgb(221,251,125),Color.rgb(199,236,97)}
-            : new int[]{Color.rgb(45,51,40),Color.rgb(34,39,30)};
+        int base=primary ? palette.accent : palette.panel;
+        int[] colors={AppPalette.blend(base,palette.text,.04f),base};
         GradientDrawable shape = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,colors);
-        shape.setCornerRadius(dp(36)); shape.setStroke(dp(1),primary ? Color.rgb(224,255,139) : Color.rgb(55,63,48));
-        setBackground(new RippleDrawable(ColorStateList.valueOf(Color.argb(40,255,255,255)),shape,null));
-        setElevation(dp(2)); ink.setColor(primary ? Color.rgb(16,18,15) : Color.rgb(245,247,239));
+        shape.setCornerRadius(dp(36)); shape.setStroke(dp(1),primary ? palette.accent : palette.stroke);
+        setBackground(new RippleDrawable(ColorStateList.valueOf(palette.dark ? Color.argb(40,255,255,255) : Color.argb(25,0,0,0)),shape,null));
+        setElevation(dp(2)); ink.setColor(primary ? palette.onAccent : palette.text);
     }
 
     void setSymbol(Symbol symbol) { if (this.symbol != symbol) { this.symbol=symbol; invalidate(); } }

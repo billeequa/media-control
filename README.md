@@ -10,9 +10,19 @@ press within one second goes to the previous track when supported. It remembers 
 instead of switching to a browser or another app when that app makes sound.
 
 The **Settings** tab has **Compact**, **Large**, and **Extra large** player sizes.
-Your choice is saved. It also has a **Check for updates** button that downloads a
+Your choice is saved. Theme options are **Classic Green**, **AMOLED**, **Midnight**,
+and **Paper**, and are also saved. It also has a **Check for updates** button that downloads a
 newer APK from this repository's latest stable release and opens Android's installer.
 Android asks you to approve installation.
+
+The transport buttons stay anchored above the tabs while artwork and metadata
+scroll separately on shorter screens. Title and artist stay on one line: long
+values scroll from start to end twice, then show an ellipsis. Buffering replaces
+the cover with centered **Loading…** inside the same square. Each transport
+button accepts taps an additional 14 dp above and below its visible bounds;
+horizontal bounds stay unchanged. A brief fading outline shows these touch areas
+when opening the player. The launcher icon is a green rounded play triangle on
+black.
 
 ## Setup
 
