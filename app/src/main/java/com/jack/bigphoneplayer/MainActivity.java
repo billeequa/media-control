@@ -77,7 +77,7 @@ public class MainActivity extends Activity implements MediaHub.Observer {
         LinearLayout.LayoutParams artParams=new LinearLayout.LayoutParams(-1,compactClock ? dp(112) : 0,compactClock ? 0 : 1);
         artParams.gravity=Gravity.CENTER_HORIZONTAL; coverArea.addView(artwork,artParams);
         wallClock=new TextClock(this); wallClock.setFormat12Hour("h:mm"); wallClock.setFormat24Hour("HH:mm");
-        wallClock.setTextColor(palette.text); wallClock.setGravity(Gravity.CENTER); wallClock.setSingleLine(true);
+        wallClock.setTextColor(palette.text); wallClock.setGravity(Gravity.CENTER); wallClock.setSingleLine(true); wallClock.setHorizontallyScrolling(false);
         wallClock.setTypeface(Typeface.create("sans-serif-light",Typeface.NORMAL));
         wallClock.setAutoSizeTextTypeUniformWithConfiguration(28,120,2,android.util.TypedValue.COMPLEX_UNIT_SP);
         wallClock.setVisibility(compactClock ? View.VISIBLE : View.GONE);
