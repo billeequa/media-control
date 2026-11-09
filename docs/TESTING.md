@@ -42,8 +42,20 @@ checks on a personal phone: they change theme preferences and activity state.
 Local: **613 logic checks passed**, and Android sources, resources and the UI
 instrumentation compile against API 35. Local Gradle could not download its
 wrapper because of network restrictions; Actions supplies full Gradle/Lint checks.
-The release's Actions results are the authoritative record of CI/runtime status.
-A successful build alone is not a device test.
+The [final Android build](https://github.com/billeequa/media-control/actions/runs/42564722874)
+passed both jobs: **613 logic checks, Gradle build/Lint, persistent signing check,
+and 44 Android 35 Pixel 4 emulator checks**. The
+[v0.5.0 publication](https://github.com/billeequa/media-control/actions/runs/42565087334)
+also passed. The published APK was downloaded independently and its digest,
+cryptographic signature, pinned certificate, package, versionCode 6 and versionName
+0.5.0 were verified. Its SHA-256 is:
+
+```
+d4538f1d189ba21d0859f1e92342e8f7f1649eb71ac93dfa2daa613d87870302
+```
+
+A successful build alone is not a device test. Emulator checks still do not
+establish real source-player or updater installation behavior.
 
 Logic coverage includes:
 

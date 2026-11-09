@@ -3,6 +3,8 @@
 ## 0.5.0
 
 - Raised the anchored playback row, reducing the gap below the time display.
+- Anchored the title, artist and clock above the controls so the enlarged clock
+  remains visible while the artwork scrolls separately.
 - Enlarged artist and elapsed/total text, the source picker, and Player/Settings labels.
 - Replaced jumping title/artist resets with continuous scrolling: two full loops,
   followed by a smooth arrival at the default, ellipsized position.
