@@ -19,7 +19,7 @@ public class UiChecks extends Instrumentation {
     Rect rect(View v) { Rect r=new Rect(); if(!v.getGlobalVisibleRect(r))r.setEmpty(); return r; }
     boolean hasScroll(View v) { if(v instanceof ScrollView)return true; if(v instanceof ViewGroup)for(int i=0;i<((ViewGroup)v).getChildCount();i++)if(hasScroll(((ViewGroup)v).getChildAt(i)))return true; return false; }
     void settle() throws Exception { waitForIdleSync(); Thread.sleep(350); }
-    Activity open() { return startActivitySync(new Intent().setClassName("com.jack.bigphoneplayer","com.jack.bigphoneplayer.MainActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK)); }
+    Activity open() { return startActivitySync(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).setClassName("com.jack.bigphoneplayer","com.jack.bigphoneplayer.MainActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK)); }
     void tap(View row,float x,float y) throws Exception {
         ui(()->{long t=SystemClock.uptimeMillis(); MotionEvent d=MotionEvent.obtain(t,t,0,x,y,0),u=MotionEvent.obtain(t,t+40,1,x,y,0); row.dispatchTouchEvent(d);row.dispatchTouchEvent(u);d.recycle();u.recycle();}); settle();
     }

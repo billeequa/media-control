@@ -29,7 +29,7 @@ public class MainActivity extends Activity implements MediaHub.Observer {
     private Switch textOnlyOption;
     private View playerPage, settingsPage;
     private Button playerTab, settingsTab;
-    private boolean settingsVisible;
+    private boolean settingsVisible,returnToPlayer;
     private AppUpdater updater;
     private int displaySize;
     private int titleSize() { return new int[]{26,32,38}[displaySize]; }
@@ -208,8 +208,8 @@ public class MainActivity extends Activity implements MediaHub.Observer {
     @Override protected void onDestroy() { if (updater != null) updater.close(); super.onDestroy(); }
     @Override protected void onRestart() { super.onRestart(); showTab(false); }
     @Override protected void onNewIntent(Intent intent) { super.onNewIntent(intent); setIntent(intent); showTab(false); }
-    @Override protected void onResume() { super.onResume(); hub.observe(this); main.post(tick); if (!settingsVisible) controlsDock.showTouchHints(); }
-    @Override protected void onPause() { main.removeCallbacks(tick); hub.unobserve(this); super.onPause(); }
+    @Override protected void onResume() { super.onResume(); if (returnToPlayer) showTab(false); returnToPlayer=false; hub.observe(this); main.post(tick); if (!settingsVisible) controlsDock.showTouchHints(); }
+    @Override protected void onPause() { returnToPlayer=true; main.removeCallbacks(tick); hub.unobserve(this); super.onPause(); }
     @Override public void changed() {
         boolean available=hub.available();
         title.setText(available ? hub.title() : ""); artist.setText(available ? hub.artist() : "");
