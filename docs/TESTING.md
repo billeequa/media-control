@@ -175,3 +175,9 @@ unchanged player, gestures, compact layout and reopening behavior.
 Phone acceptance: with a short screen timeout, leave Player visible beyond it,
 then repeat with paused playback and compact clock mode. Confirm normal timeout
 on Settings and after returning Home. The power button must still lock normally.
+
+The [v0.7.1 Android build](https://github.com/billeequa/media-control/actions/runs/42916024194)
+passed **613 logic checks, Gradle build/Lint, persistent signing verification,
+and all 75 existing Android 35 emulator checks**. Screen-timeout acceptance on a
+physical phone remains the checklist above; the existing emulator checks do not
+wait through a device's idle timeout.
