@@ -143,8 +143,20 @@ grayscale preference cleanup, and reopening the launcher from Home after leaving
 Settings. Existing text, clock, metadata, transport and theme checks remain.
 
 Local: **613 logic checks passed**. Gradle could not fetch its distribution due
-to network restrictions; full build/Lint/signing and Android 35 emulator results
-are supplied by the Android build workflow before publication.
+to network restrictions. The [final Android build](https://github.com/billeequa/media-control/actions/runs/42825670330)
+passed build/Lint/persistent-signature checks and **75 Android 35 Pixel 4 emulator
+checks**, including actual launcher reopening from Settings. The
+[v0.7.0 publication](https://github.com/billeequa/media-control/actions/runs/42826390357)
+also passed its build, Lint and cryptographic APK-signature checks. The published
+APK was downloaded independently: its v2 signer certificate matches the pinned
+update key, and its SHA-256 matches GitHub's release asset digest:
+
+```
+45c38490adc0320c760a48105be4f7b886825bacdd1d7ca022770e8fc02b03bd
+```
+
+The released app has versionCode 8 and versionName 0.7.0. These emulator checks
+do not establish source-player/OEM behavior or installer acceptance on a phone.
 
 Phone acceptance: update in place, double-tap the upper/center/lower album block,
 confirm one tap does nothing, try both directions with a paused and playing
