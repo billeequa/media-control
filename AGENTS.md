@@ -69,18 +69,25 @@ Appearance settings persist Classic Green, AMOLED, Midnight, Paper, Amber, Rose,
 Ocean, Violet, Monochrome and Cloud themes. Append new themes without reordering
 existing IDs.
 Theme all screen text, surfaces, controls and system bars, including a native
-light dialog theme for Paper. The launcher stays black with one green rounded
-play triangle. Do not tie launcher color to the selected in-app theme.
+light dialog theme for Paper. The launcher uses a dark navy (#111C2E) background with one smaller green
+play triangle with rounded corners. Do not tie launcher color to the selected in-app theme.
 
 No selected active session: show only “No player found” inside the album box;
 clear hidden cover drawables/labels and outside track metadata. Keep setup
 instructions in Settings; Choose app opens the access explanation if required.
 Paused sessions still count as an available player.
 
-Appearance preferences `grayscale_art`, `text_only_art`, and `compact_clock` are
-independent saved booleans. Text-only overrides grayscale. Compact mode always
-uses artist/album/song labels and a local current-time clock, retains progress and
-elapsed/total time, and does not move transport controls. Hidden cover modes must
-clear ImageView drawables, not merely cover them. Loading/no-player messages take
-priority over labels/images. Omit the cover from this app’s notification whenever
-any privacy/compact option is enabled; source-app notifications remain its concern.
+Appearance preferences `text_only_art` and `compact_clock` are independent saved
+booleans. Remove the legacy `grayscale_art` preference; grayscale is no longer
+supported. Double-tapping the album block cycles normal -> text-only -> normal,
+without resizing the block or recreating the player. A single tap does nothing.
+The Settings text-only switch must reflect gesture changes. Disable cycling and
+that switch while compact mode is active, retaining the prior noncompact choice.
+Compact mode always uses artist/album/song labels and a local current-time clock,
+retains progress and elapsed/total time, and does not move transport controls.
+Hidden cover modes must clear ImageView drawables, not merely cover them.
+Loading/no-player messages take priority over labels/images. Omit the cover from
+this app's notification whenever text-only/compact is enabled; source-app
+notifications remain its concern. Reopening via launcher or resuming a stopped
+activity must show Player. Settings changes may recreate the activity while
+remaining on Settings; cold starts after process death must show Player.

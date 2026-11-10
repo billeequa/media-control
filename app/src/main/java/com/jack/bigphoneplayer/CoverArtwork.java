@@ -4,8 +4,6 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
-import android.graphics.ColorMatrix;
-import android.graphics.ColorMatrixColorFilter;
 import android.graphics.CornerPathEffect;
 import android.graphics.Outline;
 import android.graphics.Paint;
@@ -15,6 +13,8 @@ import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.view.Gravity;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewOutlineProvider;
 import android.widget.FrameLayout;
@@ -29,9 +29,14 @@ final class CoverArtwork extends FrameLayout {
     private final LinearLayout label;
     private final TextView labelArtist,labelAlbum,labelSong;
     private final Drawable placeholder;
-    private boolean grayscale,textOnly,compact;
+    private boolean textOnly,compact;
+    private final GestureDetector gestures;
     CoverArtwork(Context context,AppPalette palette) {
         super(context); setClipToOutline(true); setBackgroundColor(palette.panel);
+        gestures=new GestureDetector(context,new GestureDetector.SimpleOnGestureListener() {
+            @Override public boolean onDown(MotionEvent event) { return true; }
+            @Override public boolean onDoubleTap(MotionEvent event) { return performClick(); }
+        });
         image=new ImageView(context); image.setScaleType(ImageView.ScaleType.FIT_CENTER);
         image.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         addView(image,new LayoutParams(-1,-1));
@@ -67,10 +72,12 @@ final class CoverArtwork extends FrameLayout {
         TextView line=new TextView(getContext()); line.setTextSize(size); line.setTextColor(color);
         line.setSingleLine(true); line.setEllipsize(TextUtils.TruncateAt.END); return line;
     }
-    void setPresentation(boolean grayscale,boolean textOnly,boolean compact) {
-        this.grayscale=grayscale; this.textOnly=textOnly; this.compact=compact;
-        ColorMatrix matrix=new ColorMatrix(); matrix.setSaturation(0);
-        image.setColorFilter(grayscale ? new ColorMatrixColorFilter(matrix) : null);
+    @Override public boolean onTouchEvent(MotionEvent event) {
+        return isClickable() && !compact && gestures.onTouchEvent(event);
+    }
+    @Override public boolean performClick() { return super.performClick(); }
+    void setPresentation(boolean textOnly,boolean compact) {
+        this.textOnly=textOnly; this.compact=compact;
         requestLayout();
     }
     void showContent(Bitmap bitmap,boolean buffering,boolean available,String artist,String album,String song) {

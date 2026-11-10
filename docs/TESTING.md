@@ -97,7 +97,7 @@ cannot establish Spotify, Pandora, Bandcamp or OEM lock-screen behavior.
    fonts and TalkBack. Artist, clock, source and tab labels should be readable;
    all controls and metadata should remain reachable.
 6. Select each theme and reopen the app. Check controls, settings, dialogs, loading
-   placeholder and system bars. Launcher stays black/green; notification icon is
+   placeholder and system bars. Launcher stays navy/green; notification icon is
    a separate white silhouette.
 7. Test two active sources, pinned source choice, missing capabilities, revoked
    access and a stopped source. Stale notification actions must not control a
@@ -132,3 +132,22 @@ metadata, and compact mode with a paused track. Check the device's 12/24-hour
 setting/time zone, rotation and larger font sizes. Confirm this controller's
 notification loses its cover immediately when an option is enabled. These checks
 do not establish the behavior of a source app's separate notification.
+
+## Version 0.7.0 display and reopening checks
+
+The Android checks replace the retired grayscale rendering checks with actual
+single/double taps through the player hierarchy: normal → text-only → normal,
+unchanged cover dimensions, saved mode and matching Settings switch. They also
+check compact-mode gesture blocking, the disabled text-only switch, legacy
+grayscale preference cleanup, and reopening the launcher from Home after leaving
+Settings. Existing text, clock, metadata, transport and theme checks remain.
+
+Local: **613 logic checks passed**. Gradle could not fetch its distribution due
+to network restrictions; full build/Lint/signing and Android 35 emulator results
+are supplied by the Android build workflow before publication.
+
+Phone acceptance: update in place, double-tap the upper/center/lower album block,
+confirm one tap does nothing, try both directions with a paused and playing
+source, toggle compact off and on, and reopen from Home/Recents after Settings.
+Check the smaller rounded green launcher triangle on dark navy. The separate
+notification icon remains a white transport silhouette.

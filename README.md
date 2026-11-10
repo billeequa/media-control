@@ -27,19 +27,23 @@ horizontal bounds stay unchanged. Targets may cover the time bar but stop before
 the Player and Settings tabs. The playback row sits higher, and artist, time,
 source-picker and tab labels are larger. A brief fading outline shows these touch areas
 when opening the player. The launcher icon is a green rounded play triangle on
-black.
+a dark navy background.
 
-In **Settings → Album display**, choose independently:
+Double-tap the album block to cycle **normal → text-only → normal**. Text-only
+shows artist, album and song on a plain theme-colored block with exactly the same
+footprint as the normal cover. A single tap leaves the display unchanged. The
+choice is saved and also appears in **Settings → Album display**.
 
-- **Grayscale album art**: monochrome covers.
-- **Text-only album block**: artist, album and song on a plain theme-colored block.
-- **Compact album label + big clock**: a short text block above a large current-time
-  clock in your phone’s 12/24-hour format. Track progress and elapsed/total time remain.
+**Compact album label + big clock** in Settings uses a short text block above a
+large current-time clock in your phone’s 12/24-hour format. It disables album
+mode cycling and the text-only switch until compact mode is turned off, retaining
+your prior normal/text choice. Track progress and elapsed/total time remain.
+Grayscale has been removed, including any saved grayscale preference.
 
-Text mode overrides grayscale; compact mode always uses a text label. These choices
-are saved. All three options omit the cover from Big Phone Player’s own notification;
+Text-only and compact modes omit the cover from Big Phone Player’s notification;
 your music app controls its own notification. Without an active selected player,
 the box says **No player found**, with no stale outside metadata or scrolling.
+Reopening the app returns to **Player**, even if you left it on Settings.
 
 ## Install or update
 

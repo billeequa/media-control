@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.7.0
+
+- Double-tap the album block to cycle normal → text-only → normal, preserving
+  its size and saving the choice. The Settings switch stays in sync.
+- Compact clock mode disables cycling and the text-only switch while retaining
+  the previous noncompact display choice.
+- Remove grayscale and discard its legacy saved preference.
+- Use a smaller, round-cornered green play triangle on dark navy for the launcher.
+- Reopening returns to Player, including when last used on Settings.
+
+
 ## 0.6.0
 
 - Removed scrolling from the main player screen. Without an active selected

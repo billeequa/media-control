@@ -25,7 +25,8 @@ public class MainActivity extends Activity implements MediaHub.Observer {
     private CoverArtwork artwork;
     private View metadataPanel;
     private TextClock wallClock;
-    private boolean grayscaleArt,textOnlyArt,compactClock;
+    private boolean textOnlyArt,compactClock;
+    private Switch textOnlyOption;
     private View playerPage, settingsPage;
     private Button playerTab, settingsTab;
     private boolean settingsVisible;
@@ -38,7 +39,7 @@ public class MainActivity extends Activity implements MediaHub.Observer {
     @Override public void onCreate(Bundle state) {
         palette=AppPalette.fromId(getSharedPreferences("appearance",MODE_PRIVATE).getInt("theme",0));
         SharedPreferences appearance=getSharedPreferences("appearance",MODE_PRIVATE);
-        grayscaleArt=appearance.getBoolean("grayscale_art",false);
+        appearance.edit().remove("grayscale_art").apply();
         textOnlyArt=appearance.getBoolean("text_only_art",false);
         compactClock=appearance.getBoolean("compact_clock",false);
         setTheme(palette.dark ? R.style.AppTheme : R.style.AppTheme_Light);
@@ -48,7 +49,7 @@ public class MainActivity extends Activity implements MediaHub.Observer {
         if (Build.VERSION.SDK_INT>=27 && !palette.dark) barFlags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
         getWindow().getDecorView().setSystemUiVisibility(barFlags);
         displaySize = Math.max(0, Math.min(2, getPreferences(MODE_PRIVATE).getInt("display_size", 1)));
-        settingsVisible = state != null && state.getBoolean("settings_visible");
+        settingsVisible = state != null && state.getInt("ui_process",-1)==android.os.Process.myPid() && state.getBoolean("settings_visible");
         LinearLayout root = new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setBackgroundColor(palette.background);
         FrameLayout pages = new FrameLayout(this);
         root.addView(pages, new LinearLayout.LayoutParams(-1,0,1));
@@ -72,7 +73,8 @@ public class MainActivity extends Activity implements MediaHub.Observer {
         LinearLayout.LayoutParams sourceParams = new LinearLayout.LayoutParams(0,dp(48),1); sourceParams.leftMargin=dp(12); header.addView(source,sourceParams);
         body.addView(header,params(-1,-2,0));
         artwork = new CoverArtwork(this,palette); artwork.setContentDescription("Album artwork");
-        artwork.setPresentation(grayscaleArt,textOnlyArt,compactClock);
+        artwork.setPresentation(textOnlyArt,compactClock);
+        if (!compactClock) artwork.setOnClickListener(v -> cycleAlbumDisplay());
         LinearLayout coverArea=new LinearLayout(this); coverArea.setOrientation(LinearLayout.VERTICAL); coverArea.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams artParams=new LinearLayout.LayoutParams(-1,compactClock ? dp(112) : 0,compactClock ? 0 : 1);
         artParams.gravity=Gravity.CENTER_HORIZONTAL; coverArea.addView(artwork,artParams);
@@ -126,6 +128,7 @@ public class MainActivity extends Activity implements MediaHub.Observer {
         Switch option=new Switch(this); option.setText(label); option.setTextColor(palette.text); option.setTextSize(18);
         option.setMinHeight(dp(56)); option.setSwitchPadding(dp(12)); option.setChecked(checked);
         option.setOnCheckedChangeListener((button,value)->{
+            if ("text_only_art".equals(key) && value==textOnlyArt) return;
             artwork.setVisibility(View.INVISIBLE);
             getSharedPreferences("appearance",MODE_PRIVATE).edit().putBoolean(key,value).apply();
             hub.refresh(); recreate();
@@ -152,11 +155,12 @@ public class MainActivity extends Activity implements MediaHub.Observer {
         });
         body.addView(sizes,params(-1,-2,12));
         body.addView(text("Album display",21,palette.text),params(-1,-2,28));
-        body.addView(text("Hide the cover with a plain artist, album and song label, or show it in grayscale.",16,palette.muted),params(-1,-2,8));
-        body.addView(appearanceSwitch("Grayscale album art","grayscale_art",grayscaleArt),params(-1,-2,8));
-        body.addView(appearanceSwitch("Text-only album block","text_only_art",textOnlyArt),params(-1,-2,8));
+        body.addView(text("Double-tap the album block to cycle between normal artwork and a text-only label of the same size. Disabled in compact clock mode.",16,palette.muted),params(-1,-2,8));
+        textOnlyOption=appearanceSwitch("Text-only album block","text_only_art",textOnlyArt);
+        textOnlyOption.setEnabled(!compactClock);
+        body.addView(textOnlyOption,params(-1,-2,8));
         body.addView(appearanceSwitch("Compact album label + big clock","compact_clock",compactClock),params(-1,-2,8));
-        body.addView(text("Compact mode puts a short text label above the current time, using your phone’s 12/24-hour format. Text labels take priority over grayscale. These options also hide the cover in this app’s notification; your music app manages its own notification.",16,palette.muted),params(-1,-2,8));
+        body.addView(text("Compact mode puts a short text label above the current time, using your phone’s 12/24-hour format. These options also hide the cover in this app’s notification; your music app manages its own notification.",16,palette.muted),params(-1,-2,8));
         body.addView(text("Theme",21,palette.text),params(-1,-2,28));
         RadioGroup themes=new RadioGroup(this);
         int chosenTheme=getSharedPreferences("appearance",MODE_PRIVATE).getInt("theme",0);
@@ -186,14 +190,24 @@ public class MainActivity extends Activity implements MediaHub.Observer {
         Button alerts = button("Manage notification controls",palette.text,palette.panel); alerts.setOnClickListener(v -> enableNotifications()); body.addView(alerts,params(-1,56,12));
         return page;
     }
+    private void cycleAlbumDisplay() {
+        if (compactClock) return;
+        textOnlyArt=!textOnlyArt;
+        getSharedPreferences("appearance",MODE_PRIVATE).edit().putBoolean("text_only_art",textOnlyArt).apply();
+        artwork.setPresentation(textOnlyArt,false);
+        textOnlyOption.setChecked(textOnlyArt);
+        changed(); hub.refresh();
+    }
     private void showTab(boolean settings) {
         settingsVisible = settings; playerPage.setVisibility(settings ? View.GONE : View.VISIBLE); settingsPage.setVisibility(settings ? View.VISIBLE : View.GONE);
         playerTab.setSelected(!settings); settingsTab.setSelected(settings);
         styleTab(playerTab,!settings); styleTab(settingsTab,settings);
         if (!settings) controlsDock.showTouchHints();
     }
-    @Override protected void onSaveInstanceState(Bundle state) { state.putBoolean("settings_visible",settingsVisible); super.onSaveInstanceState(state); }
+    @Override protected void onSaveInstanceState(Bundle state) { state.putInt("ui_process",android.os.Process.myPid()); state.putBoolean("settings_visible",settingsVisible); super.onSaveInstanceState(state); }
     @Override protected void onDestroy() { if (updater != null) updater.close(); super.onDestroy(); }
+    @Override protected void onRestart() { super.onRestart(); showTab(false); }
+    @Override protected void onNewIntent(Intent intent) { super.onNewIntent(intent); setIntent(intent); showTab(false); }
     @Override protected void onResume() { super.onResume(); hub.observe(this); main.post(tick); if (!settingsVisible) controlsDock.showTouchHints(); }
     @Override protected void onPause() { main.removeCallbacks(tick); hub.unobserve(this); super.onPause(); }
     @Override public void changed() {

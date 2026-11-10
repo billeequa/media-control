@@ -224,7 +224,7 @@ final class MediaHub {
             .setVisibility(Notification.VISIBILITY_PUBLIC).setOnlyAlertOnce(true)
             .setShowWhen(false).setOngoing(playing()).setCategory(Notification.CATEGORY_TRANSPORT);
         android.content.SharedPreferences appearance=context.getSharedPreferences("appearance",Context.MODE_PRIVATE);
-        boolean hideCover=appearance.getBoolean("grayscale_art",false) || appearance.getBoolean("text_only_art",false) || appearance.getBoolean("compact_clock",false);
+        boolean hideCover=appearance.getBoolean("text_only_art",false) || appearance.getBoolean("compact_clock",false);
         Bitmap artwork = hideCover ? null : art(); if (artwork != null) builder.setLargeIcon(artwork);
         if (canPrevious()) builder.addAction(new Notification.Action.Builder(android.R.drawable.ic_media_previous, "Previous", action(PREVIOUS, 1)).build());
         if (canToggle()) builder.addAction(new Notification.Action.Builder(playing() ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play, playing() ? "Pause" : "Play", action(PLAY, 2)).build());
