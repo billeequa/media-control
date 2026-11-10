@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.1
+
+- Keep the screen awake while Player is visible, including paused playback and
+  compact clock mode. Settings and background retain the normal screen timeout.
+
+
 ## 0.7.0
 
 - Double-tap the album block to cycle normal → text-only → normal, preserving

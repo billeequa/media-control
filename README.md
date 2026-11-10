@@ -15,7 +15,9 @@ Your choice is saved. Theme options are **Classic Green**, **AMOLED**, **Midnigh
 newer APK from this repository's latest stable release and opens Android's installer.
 Android asks you to approve installation.
 
-The player screen does not scroll. The transport buttons and metadata stay
+The screen stays awake while the Player screen is visible, including paused
+playback and compact clock mode. Settings and background use the normal screen
+timeout. The player screen does not scroll. The transport buttons and metadata stay
 anchored above the tabs; the cover shrinks to fit a short viewport. The elapsed/total
 time stays visible above the raised playback row. Title and artist stay on one line: long
 values loop continuously twice; the next copy slides smoothly to the normal

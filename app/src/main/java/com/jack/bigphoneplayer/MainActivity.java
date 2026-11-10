@@ -109,7 +109,8 @@ public class MainActivity extends Activity implements MediaHub.Observer {
         content.addView(new View(this),new LinearLayout.LayoutParams(-1,controlsDock.reservedHeight()));
         player.addView(content,new FrameLayout.LayoutParams(-1,-1));
         player.addView(controlsDock,new FrameLayout.LayoutParams(-1,-1));
-        playerPage = player; pages.addView(playerPage,new FrameLayout.LayoutParams(-1,-1));
+        playerPage = player; playerPage.setKeepScreenOn(true);
+        pages.addView(playerPage,new FrameLayout.LayoutParams(-1,-1));
         settingsPage = buildSettings(); pages.addView(settingsPage,new FrameLayout.LayoutParams(-1,-1));
         LinearLayout tabs = new LinearLayout(this); tabs.setPadding(dp(20),dp(6),dp(20),dp(8));
         playerTab = button("Player", palette.onAccent, palette.accent); settingsTab = button("Settings", palette.text, palette.panel);

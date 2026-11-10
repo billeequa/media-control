@@ -91,3 +91,7 @@ this app's notification whenever text-only/compact is enabled; source-app
 notifications remain its concern. Reopening via launcher or resuming a stopped
 activity must show Player. Settings changes may recreate the activity while
 remaining on Settings; cold starts after process death must show Player.
+
+Keep the screen awake with the Player view’s keepScreenOn property. Android must
+release this behavior when that view is hidden by Settings or the app is in the
+background. Do not use a wake lock or add a permission for this.

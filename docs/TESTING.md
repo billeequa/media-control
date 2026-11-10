@@ -163,3 +163,15 @@ confirm one tap does nothing, try both directions with a paused and playing
 source, toggle compact off and on, and reopen from Home/Recents after Settings.
 Check the smaller rounded green launcher triangle on dark navy. The separate
 notification icon remains a white transport silhouette.
+
+## Version 0.7.1 screen timeout
+
+Player now uses Android's View.keepScreenOn property. It applies whenever that
+view is visible, including paused/no-player and compact layouts. Settings hides
+that view; backgrounding the app also lets Android use the usual screen timeout.
+No wake lock or permission is added. Existing logic and emulator checks cover
+unchanged player, gestures, compact layout and reopening behavior.
+
+Phone acceptance: with a short screen timeout, leave Player visible beyond it,
+then repeat with paused playback and compact clock mode. Confirm normal timeout
+on Settings and after returning Home. The power button must still lock normally.
