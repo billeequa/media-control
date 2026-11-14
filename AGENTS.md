@@ -86,7 +86,7 @@ that switch while compact mode is active, retaining the prior noncompact choice.
 Compact mode always uses artist/album/song labels and a local current-time clock,
 retains progress and elapsed/total time, and does not move transport controls.
 Hidden cover modes must clear ImageView drawables, not merely cover them.
-No-player takes priority over labels/images. Loading takes priority over image artwork, except when matching preloaded queue artwork is ready; buffering never hides text labels. Omit the cover from
+No-player takes priority over labels/images. Loading takes priority over image artwork, except when matching preloaded queue artwork is ready; buffering never hides text labels. Cache upcoming queue information privately; never display it until both active queue and current media IDs confirm the track. Omit the cover from
 this app's notification whenever text-only/compact is enabled; source-app
 notifications remain its concern. Reopening via launcher or resuming a stopped
 activity must show Player. Settings changes may recreate the activity while

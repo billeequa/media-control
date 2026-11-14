@@ -45,8 +45,10 @@ your prior normal/text choice. Track progress and elapsed/total time remain.
 Grayscale has been removed, including any saved grayscale preference.
 
 When a music app supplies a queue with stable track IDs and embedded artwork,
-the next queue item's description is kept ready in memory. It is used only after
-both the active queue ID and the current media ID confirm the track. Some apps do
+the next queue item's description is cached privately in memory; it is never
+shown as an upcoming-track preview. The current song stays on screen until the
+source confirms the new active queue ID and current media ID. Matching cached
+information can then fill missing current-track fields immediately. Some apps do
 not expose this information; shuffle or queue changes may also prevent a match.
 
 Text-only and compact modes omit the cover from Big Phone Player’s notification;
