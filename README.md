@@ -23,7 +23,9 @@ time stays visible above the raised playback row. Title and artist stay on one l
 values loop continuously twice; the next copy slides smoothly to the normal
 starting position, slows to rest, and stays ellipsized. Equal metadata does not
 restart scrolling, and disabled system animations show a static line. Buffering replaces
-the cover with centered **Loading…** inside the same square. Each transport
+the cover with centered **Loading…** inside the same square, unless artwork for the
+new track was already available from the source's queue. Text-only and compact
+labels remain visible while buffering. Each transport
 button accepts taps up to one button height above and below its visible bounds;
 horizontal bounds stay unchanged. Targets may cover the time bar but stop before
 the Player and Settings tabs. The playback row sits higher, and artist, time,
@@ -41,6 +43,11 @@ large current-time clock in your phone’s 12/24-hour format. It disables album
 mode cycling and the text-only switch until compact mode is turned off, retaining
 your prior normal/text choice. Track progress and elapsed/total time remain.
 Grayscale has been removed, including any saved grayscale preference.
+
+When a music app supplies a queue with stable track IDs and embedded artwork,
+the next queue item's description is kept ready in memory. It is used only after
+both the active queue ID and the current media ID confirm the track. Some apps do
+not expose this information; shuffle or queue changes may also prevent a match.
 
 Text-only and compact modes omit the cover from Big Phone Player’s notification;
 your music app controls its own notification. Without an active selected player,

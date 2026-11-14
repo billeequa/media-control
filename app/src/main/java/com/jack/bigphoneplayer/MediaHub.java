@@ -5,6 +5,7 @@ import android.content.*;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.media.MediaMetadata;
+import android.media.MediaDescription;
 import android.media.session.*;
 import android.os.*;
 import android.provider.Settings;
@@ -34,6 +35,7 @@ final class MediaHub {
     private final MediaController.Callback callback = new MediaController.Callback() {
         @Override public void onPlaybackStateChanged(PlaybackState state) { emit(); }
         @Override public void onMetadataChanged(MediaMetadata metadata) { emit(); }
+        @Override public void onQueueChanged(List<MediaSession.QueueItem> queue) { emit(); }
         @Override public void onSessionDestroyed() { detach(); refresh(); }
     };
     private List<MediaController> sessions = new ArrayList<>();
@@ -41,6 +43,7 @@ final class MediaHub {
     private String preferred;
     private boolean connected;
     private final PreviousPress previousPress = new PreviousPress();
+    private final QueuePreload queuePreload = new QueuePreload();
     private final Runnable notificationTick = new Runnable() {
         @Override public void run() {
             if (!connected || controller == null) return;
@@ -133,6 +136,7 @@ final class MediaHub {
     }
     private void detach() {
         previousPress.reset();
+        queuePreload.clear();
         if (controller != null) controller.unregisterCallback(callback);
         controller = null;
     }
@@ -147,6 +151,10 @@ final class MediaHub {
         MediaMetadata m = metadata();
         if (m == null) return available() ? "Track information unavailable" : "Start your music";
         CharSequence title = m.getDescription().getTitle();
+        if (title == null || title.length() == 0) {
+            MediaDescription queued = preloaded();
+            title = queued == null ? null : queued.getTitle();
+        }
         return title == null || title.length() == 0 ? "Untitled track" : title.toString();
     }
     String artist() {
@@ -154,6 +162,11 @@ final class MediaHub {
         if (m == null) return "";
         String artist = m.getString(MediaMetadata.METADATA_KEY_ARTIST);
         if (artist == null) { CharSequence subtitle = m.getDescription().getSubtitle(); artist = subtitle == null ? "" : subtitle.toString(); }
+        if (artist == null || artist.isEmpty()) {
+            MediaDescription queued = preloaded();
+            CharSequence subtitle = queued == null ? null : queued.getSubtitle();
+            artist = subtitle == null ? "" : subtitle.toString();
+        }
         return artist;
     }
     String album() {
@@ -167,7 +180,19 @@ final class MediaHub {
         Bitmap b = m.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART);
         if (b == null) b = m.getBitmap(MediaMetadata.METADATA_KEY_ART);
         if (b == null) b = m.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON);
+        MediaDescription queued = preloaded();
+        if (b == null && queued != null) b = queued.getIconBitmap();
         return b;
+    }
+    private MediaDescription preloaded() {
+        PlaybackState s = state();
+        MediaMetadata m = metadata();
+        if (s == null || m == null) return null;
+        return queuePreload.match(s.getActiveQueueItemId(), m.getString(MediaMetadata.METADATA_KEY_MEDIA_ID));
+    }
+    boolean preloadedArtReady() {
+        MediaDescription queued = preloaded();
+        return queued != null && queued.getIconBitmap() != null;
     }
     long duration() { MediaMetadata m = metadata(); return m == null || !m.containsKey(MediaMetadata.METADATA_KEY_DURATION) ? -1 : m.getLong(MediaMetadata.METADATA_KEY_DURATION); }
     long position() {
@@ -203,6 +228,9 @@ final class MediaHub {
         } catch (RuntimeException exception) { refresh(); }
     }
     private void emit() {
+        PlaybackState currentState = state();
+        if (controller != null && currentState != null)
+            queuePreload.update(controller.getQueue(), currentState.getActiveQueueItemId());
         for (Observer observer : new ArrayList<>(observers)) observer.changed();
         main.removeCallbacks(notificationTick);
         if (controller == null) notifications.cancel(NOTICE);

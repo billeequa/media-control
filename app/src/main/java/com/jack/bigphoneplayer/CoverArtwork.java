@@ -84,7 +84,7 @@ final class CoverArtwork extends FrameLayout {
         // Clear hidden artwork as well as hiding its view; text mode never retains a drawable.
         image.setImageDrawable(null); image.setVisibility(INVISIBLE); label.setVisibility(GONE); loading.setVisibility(GONE);
         labelArtist.setText(""); labelAlbum.setText(""); labelSong.setText("");
-        if (!available || buffering) {
+        if (!available || (buffering && !textOnly && !compact)) {
             String message=available ? "Loading…" : "No player found";
             loading.setText(message); loading.setVisibility(VISIBLE); setContentDescription(message); return;
         }
