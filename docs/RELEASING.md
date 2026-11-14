@@ -20,10 +20,13 @@ A successful build alone is not proof of the correct signing identity.
 1. Increase both `versionCode` and `versionName` in `app/build.gradle`.
 2. Push changes and wait for **both build and ui jobs** in Android build to pass.
    The ui job runs the native instrumentation checks on an Android 35 emulator.
-3. Push a new matching version tag (for example, `git tag v0.5.0` followed by
-   `git push origin v0.5.0`), or run **Publish APK** manually on `main` in Actions.
-   Both paths test, build, lint, verify the persistent signing certificate, and
-   attach `big-phone-player.apk` to a new release. A pushed tag must exactly
+3. After a successful push build on `main`, **Publish APK** automatically checks
+   out that exact tested commit and publishes its version if no release exists.
+   Pull-request checks cannot publish. Existing releases are skipped unchanged.
+   You can also push a new matching version tag (for example, `git tag v0.8.0`
+   followed by `git push origin v0.8.0`), or run **Publish APK** manually on `main`.
+   Every path tests, builds, lints, verifies the persistent signing certificate,
+   and attaches `big-phone-player.apk` to a new release. A pushed tag must exactly
    match `versionName`; existing releases/tags are never replaced.
 4. Check the published asset's SHA-256 digest and certificate after download.
 

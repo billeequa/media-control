@@ -181,3 +181,17 @@ passed **613 logic checks, Gradle build/Lint, persistent signing verification,
 and all 75 existing Android 35 emulator checks**. Screen-timeout acceptance on a
 physical phone remains the checklist above; the existing emulator checks do not
 wait through a device's idle timeout.
+
+## Version 0.8.0 label and queue checks
+
+Instrumentation checks text-only and compact labels during buffering, no-player
+priority, and queue identity matching, transition and cache clearing. Confirm on a
+phone with the desired source: labels remain visible while buffering and queue
+preloading only applies when that source supplies matching IDs and embedded art.
+The [0.8.0 VM check run](https://github.com/billeequa/media-control/actions/runs/43630032800)
+passed the logic checks, Gradle build, Android Lint, persistent-signature
+verification and all **82 Android 35 emulator checks**. The queue check explicitly
+rejects the upcoming track before the active item changes, then accepts its cached
+description only with matching queue and media IDs. This is background caching,
+with no next-song preview. Source-player behavior on a physical phone remains
+the acceptance check above.

@@ -219,7 +219,7 @@ public class MainActivity extends Activity implements MediaHub.Observer {
         source.setText((hub.source()==null ? "Choose app" : hub.sourceLabel()) + "  ▾");
         PlaybackState playbackState=hub.state();
         int playback=playbackState==null ? PlaybackState.STATE_NONE : playbackState.getState();
-        artwork.showContent(hub.art(),playback==PlaybackState.STATE_BUFFERING || playback==PlaybackState.STATE_CONNECTING,available,hub.artist(),hub.album(),hub.title());
+        artwork.showContent(hub.art(),(playback==PlaybackState.STATE_BUFFERING || playback==PlaybackState.STATE_CONNECTING) && !hub.preloadedArtReady(),available,hub.artist(),hub.album(),hub.title());
         boolean playing = hub.playing();
         toggle.setSymbol(playing ? TransportButton.Symbol.PAUSE : TransportButton.Symbol.PLAY); toggle.setContentDescription(playing ? "Pause" : "Play"); toggle.setTooltipText(playing ? "Pause" : "Play");
         enable(previous,hub.canPrevious()); enable(toggle,hub.canToggle()); enable(next,hub.supports(PlaybackState.ACTION_SKIP_TO_NEXT));

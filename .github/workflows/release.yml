@@ -4,16 +4,28 @@ on:
   workflow_dispatch:
   push:
     tags: ['v*']
+  workflow_run:
+    workflows: ['Android build']
+    branches: [main]
+    types: [completed]
 
 permissions:
   contents: write
 
 jobs:
   release:
+    # Only publish tested main commits; a PR's VM run cannot trigger a release.
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -45,6 +57,7 @@ jobs:
       - name: Publish versioned release
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
           version=$(sed -n "s/.*versionName '\([^']*\)'.*/\1/p" app/build.gradle)
           if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then exit 1; fi
@@ -54,8 +67,12 @@ jobs:
             exit 1
           fi
           if gh release view "$tag" >/dev/null 2>&1; then
+            if [ "$GITHUB_EVENT_NAME" = workflow_run ]; then
+              echo 'This version is already published; no new release needed.'
+              exit 0
+            fi
             echo 'This version already has a release. Bump versionCode and versionName first.'
             exit 1
           fi
           cp app/build/outputs/apk/debug/app-debug.apk big-phone-player.apk
-          gh release create "$tag" big-phone-player.apk --target "$GITHUB_SHA" --title "Big Phone Player $version" --generate-notes --latest
+          gh release create "$tag" big-phone-player.apk --target "$RELEASE_SHA" --title "Big Phone Player $version" --generate-notes --latest

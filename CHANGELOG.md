@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.0
+
+- Keep text-only and compact album labels visible while the source buffers.
+- Prepare the next queue item's embedded description/artwork when available and
+  use it only after the source confirms the active queue and media IDs.
+
 ## 0.7.1
 
 - Keep the screen awake while Player is visible, including paused playback and

@@ -117,6 +117,8 @@ public class UiChecks extends Instrumentation {
             check(coverImage.getColorFilter()==null,"Artwork has an unexpected grayscale filter");
             ui(()->{try{presentation.invoke(cover,true,false);content.invoke(cover,red,false,true,"Artist","Album","Song");}catch(Exception e){throw new RuntimeException(e);}});settle();
             check(label.getVisibility()==View.VISIBLE&&coverImage.getDrawable()==null&&coverImage.getVisibility()!=View.VISIBLE,"Text mode exposes artwork");
+            ui(()->{try{content.invoke(cover,red,true,true,"Artist","Album","Song");}catch(Exception e){throw new RuntimeException(e);}});settle();
+            check(label.getVisibility()==View.VISIBLE&&((View)field(cover,"loading")).getVisibility()==View.GONE,"Buffering hid text label");
             check("Artist".contentEquals(((TextView)field(cover,"labelArtist")).getText())&&"Album".contentEquals(((TextView)field(cover,"labelAlbum")).getText())&&"Song".contentEquals(((TextView)field(cover,"labelSong")).getText()),"Label metadata/order incorrect");
             ui(()->{try{content.invoke(cover,red,false,true,"","","");}catch(Exception e){throw new RuntimeException(e);}});settle();
             check("Unknown album".contentEquals(((TextView)field(cover,"labelAlbum")).getText()),"Missing album fallback absent");
@@ -162,6 +164,24 @@ public class UiChecks extends Instrumentation {
             check((Boolean)field(a,"textOnlyArt")&&getTargetContext().getSharedPreferences("appearance",0).getBoolean("text_only_art",false),"Compact mode accepted the cycling gesture");
             check(!((Switch)field(a,"textOnlyOption")).isEnabled(),"Compact mode left text display switch enabled");
             check(((View)field(compactCover,"label")).getVisibility()==View.VISIBLE&&((ImageView)field(compactCover,"image")).getDrawable()==null,"Compact layout exposes cover");
+            ui(()->{try{compactContent.invoke(compactCover,red,true,true,"Artist","Album","Song");}catch(Exception e){throw new RuntimeException(e);}});settle();
+            check(((View)field(compactCover,"label")).getVisibility()==View.VISIBLE&&((View)field(compactCover,"loading")).getVisibility()==View.GONE,"Buffering hid compact label");
+            ui(()->{try{compactContent.invoke(compactCover,red,true,false,"Artist","Album","Song");}catch(Exception e){throw new RuntimeException(e);}});settle();
+            check("No player found".contentEquals(((TextView)field(compactCover,"loading")).getText())&&((View)field(compactCover,"label")).getVisibility()==View.GONE,"No-player state did not override compact label");
+            Class<?> queueClass=Class.forName("com.jack.bigphoneplayer.QueuePreload");
+            Constructor<?> queueConstructor=queueClass.getDeclaredConstructor();queueConstructor.setAccessible(true);
+            Object cache=queueConstructor.newInstance();
+            Method update=queueClass.getDeclaredMethod("update",java.util.List.class,long.class),match=queueClass.getDeclaredMethod("match",long.class,String.class),clear=queueClass.getDeclaredMethod("clear");
+            update.setAccessible(true);match.setAccessible(true);clear.setAccessible(true);
+            android.media.MediaDescription d1=new android.media.MediaDescription.Builder().setMediaId("one").setTitle("One").build();
+            android.media.MediaDescription d2=new android.media.MediaDescription.Builder().setMediaId("two").setTitle("Two").setIconBitmap(red).build();
+            java.util.List<android.media.session.MediaSession.QueueItem> queue=java.util.Arrays.asList(new android.media.session.MediaSession.QueueItem(d1,1),new android.media.session.MediaSession.QueueItem(d2,2));
+            update.invoke(cache,queue,1L);
+            check(match.invoke(cache,1L,"two")==null,"Upcoming track shown before transition");
+            update.invoke(cache,queue,2L);
+            check(match.invoke(cache,2L,"two")==d2,"Matching upcoming track was not preloaded");
+            check(match.invoke(cache,2L,"one")==null&&match.invoke(cache,1L,"two")==null&&match.invoke(cache,2L,null)==null,"Unverified queue identity exposed stale track");
+            clear.invoke(cache);check(match.invoke(cache,2L,"two")==null,"Source change retained queued data");
             getTargetContext().getSharedPreferences("appearance",0).edit().putBoolean("grayscale_art",false).putBoolean("text_only_art",false).putBoolean("compact_clock",false).commit();
             String[] names={"AMOLED","Midnight","Paper","Amber","Rose","Ocean","Violet","Monochrome","Cloud"};int[] backgrounds={0xff000000,0xff0b1326,0xfffaf8f2,0xff171109,0xff1b1019,0xff071a20,0xff151022,0xff080808,0xfff3f7ff};
             for(int i=1;i<=names.length;i++) {
